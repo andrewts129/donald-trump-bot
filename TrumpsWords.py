@@ -1,48 +1,78 @@
 import csv
 import random
+import tweepy
 
-with open('TrumpTweets.csv', 'r') as f:
-    reader = csv.reader(f)
-    tweets = list(reader)
 
-wordBank = []
+def create_word_bank(source):
 
-for tweet in tweets:
-    words = tweet[0].split()
+    with open(source, 'r') as f:
+        reader = csv.reader(f)
+        tweets = list(reader)
 
-    beforeWord = ""
+    word_bank = []
 
-    for word in words:
-        beforeAndCurrent = {'before': beforeWord, 'current': word}
-        beforeWord = word
-        wordBank.append(beforeAndCurrent)
+    for tweet in tweets:
+        words = tweet[0].split()
 
-isFirst = False
-firstWord = ''
-output = []
+        before_word = ""
 
-while firstWord == '':
-    r = random.choice(wordBank)
+        for word in words:
+            before_and_current = {'before': before_word, 'current': word}
+            before_word = word
+            word_bank.append(before_and_current)
 
-    if r['before'] == '':
-        firstWord = r['current']
-        output.append(firstWord)
+    return word_bank
 
-outputString = ' '.join(output)
-lastWordIsEnder = False
 
-while (len(outputString) < 130) & (lastWordIsEnder == False):
-    newWord = ''
+def create_tweet(wordBank):
 
-    while newWord == '':
+    firstWord = ''
+    outputList = []
+
+    while firstWord == '':
         r = random.choice(wordBank)
-        if r['before'] == output[-1]:
-            newWord = r['current']
-            output.append(newWord)
 
-    outputString = ' '.join(output)
-    print(outputString)
-    if (outputString[-1] == '.' or outputString[-1] == '!') and len(outputString) > 90:
-        lastWordIsEnder = True
+        if r['before'] == '' and r['current'][0] != '"':
+            firstWord = r['current']
+            outputList.append(firstWord)
 
-print(outputString)
+    outputString = ' '.join(outputList)
+    lastWordIsEnder = False
+
+    while (len(outputString) < 130) and (lastWordIsEnder == False):
+        newWord = ''
+
+        while newWord == '':
+            r = random.choice(wordBank)
+            if r['before'] == outputList[-1]:
+                newWord = r['current']
+                outputList.append(newWord)
+
+        outputString = ' '.join(outputList)
+        print(outputList)
+        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!') and len(outputString) > 90) or ('https' in newWord):
+            lastWordIsEnder = True
+
+    return outputList
+
+
+def post_tweet(tweet):
+    tweetString = ' '.join(tweet)
+    api.update_status(tweetString)
+
+
+auth = tweepy.OAuthHandler("private", "private")
+auth.set_access_token("private", "private")
+api = tweepy.API(auth)
+
+wordBank = create_word_bank('TrumpTweets.csv')
+
+tweet = create_tweet(wordBank)
+
+# If the tweet is over 140 characters, try again
+while len(' '.join(tweet)) > 140:
+    tweet = create_tweet(wordBank)
+
+print(' '.join(tweet))
+
+post_tweet(tweet)
