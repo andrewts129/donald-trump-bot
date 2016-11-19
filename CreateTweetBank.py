@@ -15,8 +15,8 @@ for year in years:
         text = i['text']
         id = i['id_str']
         if 'RT @' and '"@' not in text:
-            fuck = {'id': id, 'text': text}
-            data.append(fuck)
+            content = {'id': id, 'text': text}
+            data.append(content)
 
 
 print(data)
