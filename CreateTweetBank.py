@@ -1,7 +1,8 @@
 import requests
 import pandas as pd
 
-years = ['2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016']
+# Doesn't look like Trump was actually running his own Twitter until mid-2011 or so
+years = ['2012', '2013', '2014', '2015', '2016']
 
 data = []
 
@@ -21,5 +22,3 @@ for year in years:
 print(data)
 df = pd.DataFrame(data)
 df.to_csv('TrumpTweetsArchive.csv')
-
-
