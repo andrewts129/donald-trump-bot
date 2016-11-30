@@ -13,12 +13,14 @@ for year in years:
 
     for i in rawJson:
         text = i['text']
-        id = i['id_str']
+        tweetID = i['id_str']
+        rawTime = i['created_at']
+        time = rawTime[11:16]
         if 'RT @' and '"@' not in text:
-            content = {'id': id, 'text': text}
-            data.append(content)
+            tweet = {'id': tweetID, 'text': text, 'time': time}
+            data.append(tweet)
 
 
 print(data)
 df = pd.DataFrame(data)
-df.to_csv('TrumpTweetsArchive.csv')
+df.to_csv('TrumpTweetsArchiveTest2.csv')
