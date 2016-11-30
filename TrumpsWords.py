@@ -1,6 +1,8 @@
 import random
 import tweepy
 import pandas as pd
+import time
+import datetime
 
 
 def create_source(archive):
@@ -21,14 +23,16 @@ def create_source(archive):
 
         for tweet in newTweets:
             text = tweet.text
-            id = tweet.id_str
+            tweetID = tweet.id_str
+            time = str(tweet.created_at.hour) + ':' + str(tweet.created_at.minute)
 
-            data = {'id': id, 'text': text}
-            newTweetsDicts.append(data)
+            if 'RT @' and '"@' not in text:
+                data = {'id': tweetID, 'text': text, 'time': time}
+                newTweetsDicts.append(data)
 
         # Appends the data to the end of the archive
         df = pd.DataFrame(newTweetsDicts)
-        df.to_csv('TrumpTweetsArchive.csv', mode='a', header=False)
+        df.to_csv(archive, mode='a', header=False)
 
 
 def download_new_tweets(newestId):
@@ -64,10 +68,14 @@ def create_word_bank(source):
     texts = pd.read_csv(source, usecols=[2], encoding="ISO-8859-1")
     tweets = list(set(texts['text']))
 
+    # First value is an invalid thing called nan, causes trouble later
+    del tweets[0]
+
     word_bank = []
 
     for tweet in tweets:
         # Divides each tweets' texts into individual words
+        tweet = str(tweet)
         words = tweet.split()
 
         # The first word had no word before it. After the first word, this is changed to the previous word processed
@@ -83,6 +91,8 @@ def create_word_bank(source):
 
 
 def create_tweet(wordBank):
+
+    start = time.time()
 
     firstWord = ''
     outputList = []
@@ -115,15 +125,24 @@ def create_tweet(wordBank):
             r = random.choice(wordBank)
             if r['before'] == outputList[-1]:
                 newWord = r['current']
+                if newWord is '&amp':
+                    newWord = '&'
                 outputList.append(newWord)
+
+            end = time.time()
+
+            # If it hangs for too long, have it go ahead anyway because it's usually the end of a sentence anyway
+            if end - start > 15:
+                print("Timed out. Posting anyway")
+                return outputList
 
         # Turns the list that was created into a string so the overall length can be checked
         outputString = ' '.join(outputList)
         print(outputList)
 
-        # If the last letter is a . or ! and the tweet is getting long, end it.
+        # If the last letter is a . or ! or ? and the tweet is getting long, end it.
         # Also end if the last word is actually a link, because it can't continue from there
-        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!') and len(outputString) > 90) or ('https' in newWord):
+        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!' or outputList[-1][-1] == '?') and len(outputString) > 90) or ('http' in newWord):
             lastWordIsEnder = True
 
     return outputList
@@ -134,25 +153,70 @@ def post_tweet(tweet):
     tweetString = ' '.join(tweet)
     api.update_status(tweetString)
 
+
+def regular_tweet(archive):
+    # Calling this causes the TrumpBot to create a tweet and then post it
+
+    # Loads and updates the tweet archive
+    create_source(archive)
+
+    # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
+    wordBank = create_word_bank(archive)
+
+    # Uses the word bank to construct a Markov chain
+    tweet = create_tweet(wordBank)
+
+    # If the tweet is over 140 characters, try again
+    while len(' '.join(tweet)) > 140:
+        tweet = create_tweet(wordBank)
+
+    print(' '.join(tweet))
+
+    post_tweet(tweet)
+
+
+def get_next_tweet_time(archive):
+    times = pd.read_csv(archive, usecols=[3])
+    fuckers = list(set(times['time']))
+    # First value is an invalid thing called nan, causes trouble later
+    del fuckers[0]
+    rawTime = random.choice(fuckers)
+    posOfColon = rawTime.find(':')
+    hourOfNextTweet = int(rawTime[0:posOfColon])
+    minuteOfNextTweet = int(rawTime[posOfColon + 1: len(rawTime)])
+    timeList = [hourOfNextTweet, minuteOfNextTweet]
+    return timeList
+
+
+def find_time_to_sleep(timeList):
+    targetHour = timeList[0]
+    targetMinute = timeList[1]
+
+    timeNow = datetime.datetime.now()
+    nowHour = timeNow.hour
+    nowMinute = timeNow.minute
+
+    totalTargetSeconds = (60 * 60 * targetHour) + (60 * targetMinute)
+    totalNowSeconds = (60 * 60 * nowHour) + (60 * nowMinute)
+    timeTil = totalTargetSeconds - totalNowSeconds
+
+    if timeTil < 0:
+        timeTil = 86400 + timeTil
+
+    return timeTil
+
+
 # Twitter Authentication
 auth = tweepy.OAuthHandler("private", "private")
 auth.set_access_token("private", "private")
 api = tweepy.API(auth)
 
-# Loads and updates the tweet archive
-create_source('TrumpTweetsArchive.csv')
+archive = 'TrumpTweetsArchiveTest2.csv'
 
-# Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
-wordBank = create_word_bank('TrumpTweetsArchive.csv')
-
-# Uses the word bank to construct a Markov chain
-tweet = create_tweet(wordBank)
-
-# If the tweet is over 140 characters, try again
-while len(' '.join(tweet)) > 140:
-    tweet = create_tweet(wordBank)
-
-print(' '.join(tweet))
-
-post_tweet(tweet)
+while True:
+    nextTweetTimeList = get_next_tweet_time(archive)
+    print(nextTweetTimeList)
+    secondsToWait = find_time_to_sleep(nextTweetTimeList)
+    time.sleep(secondsToWait)
+    regular_tweet(archive)
 
