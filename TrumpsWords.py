@@ -211,7 +211,7 @@ auth = tweepy.OAuthHandler("private", "private")
 auth.set_access_token("private", "private")
 api = tweepy.API(auth)
 
-archive = 'TrumpTweetsArchiveTest2.csv'
+archive = 'TrumpTweetsArchive.csv'
 
 while True:
     nextTweetTimeList = get_next_tweet_time(archive)
