@@ -6,7 +6,6 @@ import datetime
 
 
 def create_source(archive):
-
     # Imports the csv archive and finds the tweet in there with the highest id i.e the newest one
     ids = pd.read_csv(archive, usecols=[1])
     idsList = list(set(ids['id']))
@@ -36,7 +35,6 @@ def create_source(archive):
 
 
 def download_new_tweets(newestId):
-
     alltweets = []
 
     # make initial request for most recent tweets (200 is the maximum allowed count)
@@ -63,7 +61,6 @@ def download_new_tweets(newestId):
 
 
 def create_word_bank(source):
-
     # Loads all the texts of the tweets and places them in a list
     texts = pd.read_csv(source, usecols=[2], encoding="ISO-8859-1")
     tweets = list(set(texts['text']))
@@ -91,7 +88,6 @@ def create_word_bank(source):
 
 
 def create_tweet(wordBank):
-
     start = time.time()
 
     firstWord = ''
@@ -125,7 +121,7 @@ def create_tweet(wordBank):
             r = random.choice(wordBank)
             if r['before'] == outputList[-1]:
                 newWord = r['current']
-                if newWord is '&amp':
+                if '&amp' in newWord:
                     newWord = '&'
                 outputList.append(newWord)
 
@@ -177,10 +173,10 @@ def regular_tweet(archive):
 
 def get_next_tweet_time(archive):
     times = pd.read_csv(archive, usecols=[3])
-    fuckers = list(set(times['time']))
+    listy = list(set(times['time']))
     # First value is an invalid thing called nan, causes trouble later
-    del fuckers[0]
-    rawTime = random.choice(fuckers)
+    del listy[0]
+    rawTime = random.choice(listy)
     posOfColon = rawTime.find(':')
     hourOfNextTweet = int(rawTime[0:posOfColon])
     minuteOfNextTweet = int(rawTime[posOfColon + 1: len(rawTime)])
@@ -206,6 +202,81 @@ def find_time_to_sleep(timeList):
     return timeTil
 
 
+def follow_people():
+    trumpFollowers = api.followers('realDonaldTrump')
+    for user in trumpFollowers:
+        userID = user.id
+        api.create_friendship(userID)
+
+
+def get_tweets_to_reply_to():
+    repliesToMe = api.search('@DonaldTrumBot')
+
+    # Adds the ID of all non-retweets to a list
+    for tweet in repliesToMe:
+        if hasattr(tweet, 'retweeted_status'):
+            repliesToMe.remove(tweet)
+
+    return repliesToMe
+
+
+def reply(archive, id_to_reply_to):
+    # Calling this causes the TrumpBot to reply to the tweet with the given ID
+
+    # Loads the tweet with the given ID as a status and finds the username of the author
+    tweetToReplyTo = api.get_status(id_to_reply_to)
+    user = tweetToReplyTo.user.screen_name
+
+    # Loads and updates the tweet archive
+    create_source(archive)
+
+    # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
+    wordBank = create_word_bank(archive)
+
+    # Uses the word bank to construct a Markov chain
+    tweet = create_tweet(wordBank)
+    tweet.insert(0, '@' + user)
+
+    # If the tweet is over 140 characters, try again
+    while len(' '.join(tweet)) > 140:
+        tweet = create_tweet(wordBank)
+        tweet.insert(0, '@' + user)
+
+    print(' '.join(tweet))
+
+    tweetString = ' '.join(tweet)
+    api.update_status(tweetString, in_reply_to_status_id=id_to_reply_to)
+
+
+def reply_to_people(archive):
+    tweetsToReplyTo = get_tweets_to_reply_to()
+    list_of_favorited_ids = get_list_of_favorited_tweets_ids()
+
+    for tweet in tweetsToReplyTo:
+        if tweet.id not in list_of_favorited_ids:
+            reply(archive, tweet.id)
+            api.create_favorite(tweet.id)
+
+
+def get_list_of_favorited_tweets_ids():
+    listy = api.favorites()
+    listOfIds = []
+    for i in listy:
+        listOfIds.append(i.id)
+
+    return listOfIds
+
+def list_to_datetime(timeList):
+    hour = timeList[0]
+    minute = timeList[1]
+
+    now = datetime.datetime.now()
+    target = now.replace(hour=hour, minute=minute)
+
+    if target < now:
+        target = target + datetime.timedelta(days=1)
+
+    return target
 # Twitter Authentication
 auth = tweepy.OAuthHandler("private", "private")
 auth.set_access_token("private", "private")
@@ -215,8 +286,14 @@ archive = 'TrumpTweetsArchive.csv'
 
 while True:
     nextTweetTimeList = get_next_tweet_time(archive)
+    nextTweetTime = list_to_datetime(nextTweetTimeList)
+    print(nextTweetTime)
     print(nextTweetTimeList)
-    secondsToWait = find_time_to_sleep(nextTweetTimeList)
-    time.sleep(secondsToWait)
-    regular_tweet(archive)
-
+    while True:
+        reply_to_people(archive)
+        if nextTweetTime < datetime.datetime.now():
+            regular_tweet(archive)
+            follow_people()
+            break
+        else:
+            time.sleep(300)
