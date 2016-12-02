@@ -3,6 +3,7 @@ import tweepy
 import pandas as pd
 import time
 import datetime
+from numpy.random import choice
 
 
 def create_source(archive):
@@ -60,85 +61,81 @@ def download_new_tweets(newestId):
     return alltweets
 
 
-def create_word_bank(source):
-    # Loads all the texts of the tweets and places them in a list
-    texts = pd.read_csv(source, usecols=[2], encoding="ISO-8859-1")
-    tweets = list(set(texts['text']))
+def create_word_bank(archive):
+    texts = pd.read_csv(archive, usecols=[2], encoding="ISO-8859-1")
+    source = list(set(texts['text']))
+    firstAndSecond = []
 
-    # First value is an invalid thing called nan, causes trouble later
-    del tweets[0]
-
-    word_bank = []
-
-    for tweet in tweets:
-        # Divides each tweets' texts into individual words
-        tweet = str(tweet)
+    for tweet in source:
         words = tweet.split()
+        if len(words) > 1:
+            listy = [words[0], words[1]]
+            firstAndSecond.append(listy)
 
-        # The first word had no word before it. After the first word, this is changed to the previous word processed
-        before_word = ""
+    source.append(">")
+    source = ' '.join(source)
+    source = source.split()
 
-        # Sorts the individual words into dictionaries with the current and before word, for use in Markov chain later
-        for word in words:
-            before_and_current = {'before': before_word, 'current': word}
-            before_word = word
-            word_bank.append(before_and_current)
-
-    return word_bank
+    return source, firstAndSecond
 
 
-def create_tweet(wordBank):
-    start = time.time()
+def create_tweet(wordBank, startingBank):
+    data = {}
 
-    firstWord = ''
-    outputList = []
+    for index, word in enumerate(wordBank):
+        first = word
+        second = wordBank[index + 1]
+        third = wordBank[index + 2]
 
-    # Finds a word that had no word before it (aka a first word) and makes it the start of the chain
-    while firstWord == '':
-        r = random.choice(wordBank)
+        if "&amp" in first:
+            first = "&"
+        if "&amp" in second:
+            second = "&"
+        if "&amp" in third:
+            third = "&"
 
-        if r['before'] == '' and r['current'][0] != '"':
-            firstWord = r['current']
-            outputList.append(firstWord)
+        if first not in data.keys():
+            thirdDict = {third: 1}
+            secondDict = {second: thirdDict}
+            data[first] = secondDict
 
-    # Turns the list that was created into a string so the overall length can be checked
-    outputString = ' '.join(outputList)
-    print(outputList)
+        elif first in data.keys() and second not in data[first].keys():
+            thirdDict = {third: 1}
+            data[first][second] = thirdDict
 
-    # An ender word is one that signals a good end of a tweet
+        elif first in data.keys() and second in data[first].keys() and third not in data[first][second].keys():
+            data[first][second][third] = 1
+
+        else:
+            data[first][second][third] += 1
+
+        if third == ">":
+            break
+
+    startingList = random.choice(startingBank)
+    outputList = [startingList[0], startingList[1]]
+
     lastWordIsEnder = False
 
-    # Creation of the Markov chain
-    while (len(outputString) < 130) and (lastWordIsEnder == False):
-        newWord = ''
+    while len(' '.join(outputList)) < 130 and lastWordIsEnder is False:
+        first = outputList[-2]
+        second = outputList[-1]
 
-        # Keeps looping until a match is found
-        while newWord == '':
+        totalChoices = sum(data[first][second].values())
+        valuesListRaw = list(data[first][second].values())
+        valuesListCorrected = []
 
-            # Selects a random word in the bank and checks the word that came before it in the original tweet
-            # If the before word matches the last currently in the chain, add it
-            # This is probably a horribly inefficient way of doing this
-            r = random.choice(wordBank)
-            if r['before'] == outputList[-1]:
-                newWord = r['current']
-                if '&amp' in newWord:
-                    newWord = '&'
-                outputList.append(newWord)
+        for rawValue in valuesListRaw:
+            correctedValue = rawValue / float(totalChoices)
+            valuesListCorrected.append(correctedValue)
 
-            end = time.time()
+        listOfWords = list(data[first][second].keys())
 
-            # If it hangs for too long, have it go ahead anyway because it's usually the end of a sentence anyway
-            if end - start > 15:
-                print("Timed out. Posting anyway")
-                return outputList
+        third = choice(listOfWords, 1, p=valuesListCorrected)[0]
 
-        # Turns the list that was created into a string so the overall length can be checked
-        outputString = ' '.join(outputList)
-        print(outputList)
+        outputList.append(third)
 
-        # If the last letter is a . or ! or ? and the tweet is getting long, end it.
-        # Also end if the last word is actually a link, because it can't continue from there
-        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!' or outputList[-1][-1] == '?') and len(outputString) > 90) or ('http' in newWord):
+        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!' or outputList[-1][-1] == '?') and len(' '.join(outputList)) > 90) or ('http' in outputList[-1]):
             lastWordIsEnder = True
 
     return outputList
@@ -157,14 +154,14 @@ def regular_tweet(archive):
     create_source(archive)
 
     # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
-    wordBank = create_word_bank(archive)
+    wordBank, firstAndSecondBank = create_word_bank(archive)
 
     # Uses the word bank to construct a Markov chain
-    tweet = create_tweet(wordBank)
+    tweet = create_tweet(wordBank, firstAndSecondBank)
 
     # If the tweet is over 140 characters, try again
     while len(' '.join(tweet)) > 140:
-        tweet = create_tweet(wordBank)
+        tweet = create_tweet(wordBank, firstAndSecondBank)
 
     print(' '.join(tweet))
 
@@ -231,15 +228,15 @@ def reply(archive, id_to_reply_to):
     create_source(archive)
 
     # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
-    wordBank = create_word_bank(archive)
+    wordBank, firstAndSecondBank = create_word_bank(archive)
 
     # Uses the word bank to construct a Markov chain
-    tweet = create_tweet(wordBank)
+    tweet = create_tweet(wordBank, firstAndSecondBank)
     tweet.insert(0, '@' + user)
 
     # If the tweet is over 140 characters, try again
     while len(' '.join(tweet)) > 140:
-        tweet = create_tweet(wordBank)
+        tweet = create_tweet(wordBank, firstAndSecondBank)
         tweet.insert(0, '@' + user)
 
     print(' '.join(tweet))
