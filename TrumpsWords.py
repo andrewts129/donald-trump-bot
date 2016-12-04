@@ -158,7 +158,7 @@ def regular_tweet(archive):
 
     print(' '.join(tweet))
 
-    #post_tweet(tweet)
+    post_tweet(tweet)
 
 
 def get_next_tweet_time(archive):
