@@ -61,77 +61,63 @@ def download_new_tweets(newestId):
     return alltweets
 
 
-def create_word_bank(archive):
+def create_word_bank(archive , n):
     texts = pd.read_csv(archive, usecols=[2], encoding="ISO-8859-1")
     source = list(set(texts['text']))
 
-    firstWords = []
+    wordBank = {}
 
     for tweet in source:
-        words = tweet.split()
-        if len(words) > 1:
-            word = words[0]
-            firstWords.append(word)
+        for index, letter in enumerate(tweet):
+            if len(tweet) >= n:
+                letters = [letter]
+                i = 1
 
-    source.append(">")
-    source = ' '.join(source)
-    source = source.split()
+                while i < n:
+                    letters.append(tweet[index + i])
+                    i += 1
 
-    return source, firstWords
+                nested_set(wordBank, letters)
+
+                if index == len(tweet) - n:
+                    break
+
+    starterTweet = random.choice(source)
+    starter = starterTweet[0: n-1]
+    return wordBank, starter
 
 
-def create_tweet(wordBank, startingBank):
-    data = {}
-
-    for index, word in enumerate(wordBank):
-        first = word
-        second = wordBank[index + 1]
-
-        if "&amp" in first:
-            first = "&"
-        if "&amp" in second:
-            second = "&"
-
-        if first not in data.keys():
-            secondDict = {second: 1}
-            data[first] = secondDict
-
-        elif first in data.keys() and second not in data[first].keys():
-            data[first][second] = 1
-
-        else:
-            data[first][second] += 1
-
-        if second == ">":
-            break
-
-    starter = random.choice(startingBank)
-    outputList = []
-    outputList.append(starter)
+def create_tweet(wordBank, starter, n):
+    output = list(starter)
 
     lastWordIsEnder = False
 
-    while len(' '.join(outputList)) < 120 and lastWordIsEnder is False:
-        first = outputList[-1]
+    while len(''.join(output)) < 130 and lastWordIsEnder is False:
+        lastLetters = output[-n + 1:]
 
-        totalChoices = sum(data[first].values())
-        valuesListRaw = list(data[first].values())
-        valuesListCorrected = []
+        try:
+            totalChoices = sum(get_bottom_dict(wordBank, lastLetters).values())
+            valuesListRaw = list(get_bottom_dict(wordBank, lastLetters).values())
+            valuesListCorrected = []
+
+        except (KeyError, ValueError, AttributeError):
+            print("ERROR")
+            return output
 
         for rawValue in valuesListRaw:
             correctedValue = rawValue / float(totalChoices)
             valuesListCorrected.append(correctedValue)
 
-        listOfWords = list(data[first].keys())
+        listOfWords = list(get_bottom_dict(wordBank, lastLetters).keys())
 
-        second = choice(listOfWords, 1, p=valuesListCorrected)[0]
+        fourth = choice(listOfWords, 1, p=valuesListCorrected)[0]
 
-        outputList.append(second)
+        output.append(fourth)
 
-        if ((outputList[-1][-1] == '.' or outputList[-1][-1] == '!' or outputList[-1][-1] == '?') and len(' '.join(outputList)) > 80) or ('http' in outputList[-1]):
+        if ((output[-1] == '.' or output[-1] == '!' or output[-1] == '?') and len(''.join(output)) > 90):
             lastWordIsEnder = True
 
-    return outputList
+    return output
 
 
 def post_tweet(tweet):
@@ -140,23 +126,23 @@ def post_tweet(tweet):
     api.update_status(tweetString)
 
 
-def regular_tweet(archive):
+def regular_tweet(archive, n):
     # Calling this causes the TrumpBot to create a tweet and then post it
 
     # Loads and updates the tweet archive
     create_source(archive)
 
     # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
-    wordBank, firstBank = create_word_bank(archive)
+    wordBank, starter = create_word_bank(archive, n)
 
     # Uses the word bank to construct a Markov chain
-    tweet = create_tweet(wordBank, firstBank)
+    tweet = create_tweet(wordBank, starter, n)
 
     # If the tweet is over 140 characters, try again
-    while len(' '.join(tweet)) > 140:
-        tweet = create_tweet(wordBank, firstBank)
+    while len(''.join(tweet)) > 140:
+        tweet = create_tweet(wordBank, starter, n)
 
-    print(' '.join(tweet))
+    print(''.join(tweet))
 
     post_tweet(tweet)
 
@@ -210,7 +196,7 @@ def get_tweets_to_reply_to():
     return repliesToMe
 
 
-def reply(archive, id_to_reply_to):
+def reply(archive, id_to_reply_to, n):
     # Calling this causes the TrumpBot to reply to the tweet with the given ID
 
     # Loads the tweet with the given ID as a status and finds the username of the author
@@ -221,30 +207,30 @@ def reply(archive, id_to_reply_to):
     create_source(archive)
 
     # Uses the archive to create a word bank of all of Trump's tweets' words and the words that came before
-    wordBank, firstBank = create_word_bank(archive)
+    wordBank, firstBank = create_word_bank(archive, n)
 
     # Uses the word bank to construct a Markov chain
-    tweet = create_tweet(wordBank, firstBank)
+    tweet = create_tweet(wordBank, firstBank, n)
     tweet.insert(0, '@' + user)
 
     # If the tweet is over 140 characters, try again
-    while len(' '.join(tweet)) > 140:
-        tweet = create_tweet(wordBank, firstBank)
+    while len(''.join(tweet)) > 140:
+        tweet = create_tweet(wordBank, firstBank, n)
         tweet.insert(0, '@' + user)
 
-    print(' '.join(tweet))
+    print(''.join(tweet))
 
-    tweetString = ' '.join(tweet)
+    tweetString = ''.join(tweet)
     api.update_status(tweetString, in_reply_to_status_id=id_to_reply_to)
 
 
-def reply_to_people(archive):
+def reply_to_people(archive, n):
     tweetsToReplyTo = get_tweets_to_reply_to()
     list_of_favorited_ids = get_list_of_favorited_tweets_ids()
 
     for tweet in tweetsToReplyTo:
         if tweet.id not in list_of_favorited_ids:
-            reply(archive, tweet.id)
+            reply(archive, tweet.id, n)
             api.create_favorite(tweet.id)
 
 
@@ -268,13 +254,29 @@ def list_to_datetime(timeList):
         target = target + datetime.timedelta(days=1)
 
     return target
+
+
+def nested_set(dic, keys):
+    for key in keys[:-1]:
+        dic = dic.setdefault(key, {})
+    dic.setdefault(keys[-1], 0)
+    dic[keys[-1]] += 1
+
+
+def get_bottom_dict(dic, keys):
+    for key in keys:
+        dic = dic.get(key)
+    return dic
+
+
 # Twitter Authentication
 auth = tweepy.OAuthHandler("private", "private")
 auth.set_access_token("private", "private")
 api = tweepy.API(auth)
 
 archive = 'TrumpTweetsArchive.csv'
-regular_tweet(archive)
+
+n = 12
 
 while True:
     nextTweetTimeList = get_next_tweet_time(archive)
@@ -282,9 +284,9 @@ while True:
     print(nextTweetTime)
     print(nextTweetTimeList)
     while True:
-        reply_to_people(archive)
+        reply_to_people(archive, n)
         if nextTweetTime < datetime.datetime.now():
-            regular_tweet(archive)
+            regular_tweet(archive, n)
             follow_people()
             break
         else:
