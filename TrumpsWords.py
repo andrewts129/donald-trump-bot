@@ -36,6 +36,7 @@ def create_source(archive):
 
 
 def download_new_tweets(newestId):
+    # Gets all the newest tweets that aren't yet in the archive
     alltweets = []
 
     # make initial request for most recent tweets (200 is the maximum allowed count)
@@ -62,14 +63,20 @@ def download_new_tweets(newestId):
 
 
 def create_word_bank(archive , n):
+    # Creates the nested dictionary of letters to use, as well as the first few letters to start the tweet off with
+    # n is the number of preceding characters that will be looked back upon to build the Markov chain
     texts = pd.read_csv(archive, usecols=[2], encoding="ISO-8859-1")
     source = list(set(texts['text']))
 
     wordBank = {}
 
+    # Goes through every tweet in the archive
     for tweet in source:
+        # Goes through every letter in the tweet
         for index, letter in enumerate(tweet):
+            # The tweet can only be processed if there are at least n letters
             if len(tweet) >= n:
+                # Builds a list of each sequence of letters of n length in the tweet
                 letters = [letter]
                 i = 1
 
@@ -77,52 +84,84 @@ def create_word_bank(archive , n):
                     letters.append(tweet[index + i])
                     i += 1
 
+                # Adds one to the number of times each sequence has appeared
                 nested_set(wordBank, letters)
 
                 if index == len(tweet) - n:
                     break
 
+    # Picks a random tweet and uses the first n characters as the starting point for the Markov chain
     starterTweet = random.choice(source)
     starter = starterTweet[0: n-1]
     return wordBank, starter
 
 
 def create_tweet(wordBank, starter, n):
+    # Uses a Markov chain to create a tweet imitating Donald Trump
+
+    # Starts the tweet by adding the first few characters of an actual @realDonaldTrump tweet
     output = list(starter)
 
+    # This becomes true when the tweet has found a good stopping point
     lastWordIsEnder = False
 
-    while len(''.join(output)) < 130 and lastWordIsEnder is False:
+    while len(''.join(output)) < 140 and lastWordIsEnder is False:
+        # Finds the last few letters of the tweet for the Markov chain to build on
         lastLetters = output[-n + 1:]
 
+        # Finds the bottom dictionary in the sequence, the one that has the finals letters and their frequency
         try:
-            totalChoices = sum(get_bottom_dict(wordBank, lastLetters).values())
-            valuesListRaw = list(get_bottom_dict(wordBank, lastLetters).values())
-            valuesListCorrected = []
+            bottomDict = get_bottom_dict(wordBank, lastLetters)
 
+            # Looks for the letters that have come after the preceding sequence
+            # Total number of times that sequence has appeared
+            totalChoices = sum(bottomDict.values())
+
+        # If there is an error, nothing has come after that sequence, meaning it has only appeared at the end of a tweet
+        # and therefore is ready to post
         except (KeyError, ValueError, AttributeError):
             print("ERROR")
+            if output[0] == '@':
+                output.insert(0, '.')
             return output
 
+        # Gets the number of times each letter has appeared after the sequence, for p-values
+        valuesListRaw = list(bottomDict.values())
+        valuesListCorrected = []
+
+        # Converts the number of times each letter has appeared into p-values by dividing by the total number of times
+        # some letter has come after the sequence
         for rawValue in valuesListRaw:
             correctedValue = rawValue / float(totalChoices)
             valuesListCorrected.append(correctedValue)
 
-        listOfWords = list(get_bottom_dict(wordBank, lastLetters).keys())
+        # Gets a list of all the letters that have come after the sequence
+        listOfLetters = list(bottomDict.keys())
 
-        fourth = choice(listOfWords, 1, p=valuesListCorrected)[0]
+        # Chooses a letter from the list using the p-values created above
+        newLetter = choice(listOfLetters, 1, p=valuesListCorrected)[0]
 
-        output.append(fourth)
+        output.append(newLetter)
 
-        if ((output[-1] == '.' or output[-1] == '!' or output[-1] == '?') and len(''.join(output)) > 90):
+        # If the last letter of the tweet so far is a punctuation and the tweet is already 90 characters, called it done
+        if output[-1] in '.!?' and len(''.join(output)) > 90:
             lastWordIsEnder = True
+
+    # Adds a . if tweeting directly at somebody so it shows up on all timelines
+    if output[0] == '@':
+        output.insert(0, '.')
 
     return output
 
 
 def post_tweet(tweet):
+    # Puts the final touches on the tweet and then posts it
     # Converts the tweet list to a string for tweeting purposes
-    tweetString = ' '.join(tweet)
+    tweetString = ''.join(tweet)
+
+    # Makes sure the ampersands are represented correctly in the tweet
+    tweetString = replace_amp(tweetString)
+    tweetString = removed_hanging_link(tweetString)
     api.update_status(tweetString)
 
 
@@ -148,6 +187,7 @@ def regular_tweet(archive, n):
 
 
 def get_next_tweet_time(archive):
+    # Determines the next time that TrumBot should tweet by finding the time of a real Trump tweet
     times = pd.read_csv(archive, usecols=[3])
     listy = list(set(times['time']))
     # First value is an invalid thing called nan, causes trouble later
@@ -160,32 +200,40 @@ def get_next_tweet_time(archive):
     return timeList
 
 
-def find_time_to_sleep(timeList):
-    targetHour = timeList[0]
-    targetMinute = timeList[1]
-
-    timeNow = datetime.datetime.now()
-    nowHour = timeNow.hour
-    nowMinute = timeNow.minute
-
-    totalTargetSeconds = (60 * 60 * targetHour) + (60 * targetMinute)
-    totalNowSeconds = (60 * 60 * nowHour) + (60 * nowMinute)
-    timeTil = totalTargetSeconds - totalNowSeconds
-
-    if timeTil < 0:
-        timeTil = 86400 + timeTil
-
-    return timeTil
-
-
 def follow_people():
+    # Follows people who have recently followed Trump
     trumpFollowers = api.followers('realDonaldTrump')
+
     for user in trumpFollowers:
         userID = user.id
         api.create_friendship(userID)
 
+    # Follows people who have recently tweeted about Trump
+    searchResults = api.search('Trump')
+
+    for tweet in searchResults:
+        userID = tweet.author.id
+        api.create_friendship(userID)
+
+
+def unfollow_people():
+    # Unfollows people who have not followed back (gotta keep that ratio good)
+    myFollowers = api.followers_ids()
+    following = api.friends_ids()
+
+    # Excludes the 50 most recent followers, give them some time to decide
+    following = following[-50:]
+
+    # People that are allowed to not follow me back
+    whitelist = [25073877, 705113652471439361, 805070473839177728, 799735756411408384, 804438219676712960]
+
+    for user in following:
+        if user not in myFollowers and user not in whitelist:
+            api.destroy_friendship(id=user)
+
 
 def get_tweets_to_reply_to():
+    # Gets the tweets that are directed at TrumBot
     repliesToMe = api.search('@DonaldTrumBot')
 
     # Adds the ID of all non-retweets to a list
@@ -211,20 +259,24 @@ def reply(archive, id_to_reply_to, n):
 
     # Uses the word bank to construct a Markov chain
     tweet = create_tweet(wordBank, firstBank, n)
-    tweet.insert(0, '@' + user)
+    tweet.insert(0, '@' + user + ' ')
 
     # If the tweet is over 140 characters, try again
     while len(''.join(tweet)) > 140:
         tweet = create_tweet(wordBank, firstBank, n)
-        tweet.insert(0, '@' + user)
+        tweet.insert(0, '@' + user + ' ')
 
     print(''.join(tweet))
 
     tweetString = ''.join(tweet)
+    tweetString = replace_amp(tweetString)
+    tweetString = removed_hanging_link(tweetString)
     api.update_status(tweetString, in_reply_to_status_id=id_to_reply_to)
 
 
 def reply_to_people(archive, n):
+    # Replies to everybody that has tweeted at TrumBot
+    # TrumBot favorites a tweet after it replies, so it knows not to reply to it again
     tweetsToReplyTo = get_tweets_to_reply_to()
     list_of_favorited_ids = get_list_of_favorited_tweets_ids()
 
@@ -235,10 +287,11 @@ def reply_to_people(archive, n):
 
 
 def get_list_of_favorited_tweets_ids():
-    listy = api.favorites()
+    # Gets a list of every tweet that TrumBot has favorited
     listOfIds = []
-    for i in listy:
-        listOfIds.append(i.id)
+
+    for tweet in tweepy.Cursor(api.favorites).items():
+        listOfIds.append(tweet.id)
 
     return listOfIds
 
@@ -257,6 +310,7 @@ def list_to_datetime(timeList):
 
 
 def nested_set(dic, keys):
+    # Adds one to the value of the lowest dictionary in a nested dictionary, given a list of keys to look down through
     for key in keys[:-1]:
         dic = dic.setdefault(key, {})
     dic.setdefault(keys[-1], 0)
@@ -264,9 +318,27 @@ def nested_set(dic, keys):
 
 
 def get_bottom_dict(dic, keys):
+    # Returns the bottom-most dictionary in a nested dictionary, given a list of keys to look down through
     for key in keys:
         dic = dic.get(key)
     return dic
+
+
+def replace_amp(text):
+    text = text.replace('&amp;', '&')
+    text = text.replace('&amp', '&')
+
+    return text
+
+
+def removed_hanging_link(text):
+    # Sometimes the tweet will finished with an unfinished link, like http://t. This removes it
+    endOfString = text[-10:]
+    if 'https://t.' in endOfString:
+        text.replace('https://t.', '')
+    elif 'http://t.' in endOfString:
+        text.replace('http://t.', '')
+    return text
 
 
 # Twitter Authentication
@@ -276,7 +348,7 @@ api = tweepy.API(auth)
 
 archive = 'TrumpTweetsArchive.csv'
 
-n = 12
+n = 11
 
 while True:
     nextTweetTimeList = get_next_tweet_time(archive)
@@ -288,6 +360,7 @@ while True:
         if nextTweetTime < datetime.datetime.now():
             regular_tweet(archive, n)
             follow_people()
+            unfollow_people()
             break
         else:
             time.sleep(300)
