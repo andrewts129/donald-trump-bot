@@ -4,6 +4,8 @@ import pandas as pd
 from numpy.random import choice
 import time
 
+print('Waking up...')
+
 # Setting up for using the Twitter API
 auth = tweepy.OAuthHandler(consumer_key='private',
                            consumer_secret='private')
@@ -95,15 +97,6 @@ class Source(object):
         # Creates the nested dictionary of letters to use
         # n is the number of preceding characters that will be looked back upon to build the Markov chain
 
-        def nested_set(dic, keys):
-            # Adds one to the value of the lowest dictionary in a nested dictionary, given a list of keys to look down
-            # through
-
-            for key in keys[:-1]:
-                dic = dic.setdefault(key, {})
-            dic.setdefault(keys[-1], 0)
-            dic[keys[-1]] += 1
-
         letter_bank = {}
 
         # Goes through every tweet in the archive
@@ -120,8 +113,11 @@ class Source(object):
                         letters.append(tweet[index + i])
                         i += 1
 
-                    # Adds one to the number of times each sequence has appeared
-                    nested_set(letter_bank, letters)
+                    key1 = tuple(letters[:-1])
+                    key2 = letters[-1]
+                    letter_bank.setdefault(key1, {})
+                    letter_bank[key1].setdefault(key2, 0)
+                    letter_bank[key1][key2] += 1
 
                     if index == len(tweet) - self.n:
                         break
@@ -178,11 +174,11 @@ class TweetBuilder(object):
             # Need to leave room for the @username if it's a reply
             while len(''.join(output_tweet)) < 140 - space_to_leave and last_word_is_ender is False:
                 # Finds the last few letters of the tweet for the Markov chain to build on
-                last_letters = output_tweet[-self.n + 1:]
+                last_letters = tuple(output_tweet[-self.n + 1:])
 
                 # Finds the bottom dictionary in the sequence, the one that has the finals letters and their frequency
                 try:
-                    bottom_dict = get_bottom_dict(letter_bank, last_letters)
+                    bottom_dict = letter_bank[last_letters]
 
                     # Looks for the letters that have come after the preceding sequence
                     # Total number of times that sequence has appeared
@@ -260,6 +256,8 @@ class TweetBuilder(object):
         while len(tweet_string) > 140:
             tweet_string = refine_markov_for_tweeting(create_markov())
 
+        print(tweet_string)
+
         return tweet_string
 
 
@@ -287,8 +285,10 @@ class Bot(object):
         random_number = random.choice(self.listy)
 
         if random_number == 0:
+            print('Tweeting...')
             return True
         else:
+            print('Not tweeting...')
             return False
 
     def reply_to_people(self):
@@ -321,6 +321,7 @@ class Bot(object):
         for tweet in tweets_to_reply_to:
             if tweet.id not in list_of_favorited_ids:
                 username = tweet.author.screen_name
+                print('Replying to @' + username + '...')
                 string_to_tweet = self.tweet_builder.create_tweet(username_to_reply_to=username)
 
                 api.update_status(string_to_tweet, in_reply_to_status_id=tweet.id)
@@ -382,9 +383,9 @@ source = Source(archive=csvFileName, n=numberOfLettersUsed)
 
 tweetBuilder = TweetBuilder(source_object=source, n=numberOfLettersUsed)
 
-donaldTrumBot = Bot(tweet_builder=tweetBuilder, minutes_between_reply_checks=5,
+donaldTrumBot = Bot(tweet_builder=tweetBuilder, minutes_between_reply_checks=10,
                     number_of_times_to_tweet_per_day=1)
 
-while True:
-    donaldTrumBot.wake_up()
-    time.sleep(donaldTrumBot.seconds_between_reply_checks)
+donaldTrumBot.wake_up()
+
+print('Going back to sleep...')
