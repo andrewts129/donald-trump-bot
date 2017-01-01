@@ -5,11 +5,11 @@ from numpy.random import choice
 import time
 
 # Setting up for using the Twitter API
-auth = tweepy.OAuthHandler(consumer_key='r33lYBUS2murfH4laSDXOnMmr',
-                           consumer_secret='t3qVrYYeAfK3kWPkY3LnP20z0QfMl1TPr0Q6WZm4Olt61VKkpx')
+auth = tweepy.OAuthHandler(consumer_key='private',
+                           consumer_secret='private')
 
-auth.set_access_token(key='797971904258772996-42sBRXzXu6o4o7lquisdw3RsZ3uoJ3l',
-                      secret='RzeKkSzzd5kbzrr0NOu2z3J6E5AULCO6xVUuVVyx9r2NC')
+auth.set_access_token(key='private',
+                      secret='private')
 
 api = tweepy.API(auth)
 
