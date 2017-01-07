@@ -6,11 +6,11 @@ from numpy.random import choice
 print('Waking up...')
 
 # Setting up for using the Twitter API
-auth = tweepy.OAuthHandler(consumer_key='F5kphzVfDT5Y5taE467x8dDzX',
-                           consumer_secret='5dleu5PeeQ8RXziaOflaXA6jVmGScZNpMvQ7qdrXF29z8l7UbQ')
+auth = tweepy.OAuthHandler(consumer_key='private',
+                           consumer_secret='private')
 
-auth.set_access_token(key='797971904258772996-42sBRXzXu6o4o7lquisdw3RsZ3uoJ3l',
-                      secret='RzeKkSzzd5kbzrr0NOu2z3J6E5AULCO6xVUuVVyx9r2NC')
+auth.set_access_token(key='private',
+                      secret='private')
 
 api = tweepy.API(auth)
 
