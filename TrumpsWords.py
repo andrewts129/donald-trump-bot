@@ -6,11 +6,11 @@ from numpy.random import choice
 print('Waking up...')
 
 # Setting up for using the Twitter API
-auth = tweepy.OAuthHandler(consumer_key='private',
-                           consumer_secret='private')
+auth = tweepy.OAuthHandler(consumer_key='F5kphzVfDT5Y5taE467x8dDzX',
+                           consumer_secret='5dleu5PeeQ8RXziaOflaXA6jVmGScZNpMvQ7qdrXF29z8l7UbQ')
 
-auth.set_access_token(key='private',
-                      secret='private')
+auth.set_access_token(key='797971904258772996-42sBRXzXu6o4o7lquisdw3RsZ3uoJ3l',
+                      secret='RzeKkSzzd5kbzrr0NOu2z3J6E5AULCO6xVUuVVyx9r2NC')
 
 api = tweepy.API(auth)
 
@@ -234,24 +234,27 @@ class TweetBuilder(object):
                 else:
                     tweet_list_words[0] = '.' + tweet_list_words[0]
 
+            # This will be the list of words after some modifications might be made
+            better_tweet_list_words = []
+            
             for index, word in enumerate(tweet_list_words):
 
-                # Sometimes the chain will end at the period in a link. If so, remove it
-                if word is 'https://t.' or word is 'http://t.':
-                    del tweet_list_words[index]
-
                 # At some point during this program, ampersands get messed up. This fixes it.
-                elif word is '&amp;' or word is '&amp':
-                    tweet_list_words[index] = '&'
+                if word is '&amp;' or word is '&amp':
+                    better_tweet_list_words.append(word)
+
+                # Sometimes the chain will end on the period in a link. If so, do not include it
+                elif word != 'https://t.' or word != 'http://t.':
+                    better_tweet_list_words.append(word)
 
             # If the bot is supposed to be talking to somebody, make it @ them
             if len(username_to_reply_to) is not 0:
-                tweet_list_words.insert(0, '@' + username_to_reply_to)
+                better_tweet_list_words.insert(0, '@' + username_to_reply_to)
 
             # Returns a string of the completed tweet
-            return ' '.join(tweet_list_words)
+            return ' '.join(better_tweet_list_words)
 
-        # All the letter sequences in all Trump's tweets, with the number of times each occured
+        # All the letter sequences in all Trump's tweets, with the number of times each occurred
 
         tweet_string = refine_markov_for_tweeting(create_markov())
 
