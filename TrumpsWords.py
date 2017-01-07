@@ -6,11 +6,11 @@ from numpy.random import choice
 print('Waking up...')
 
 # Setting up for using the Twitter API
-auth = tweepy.OAuthHandler(consumer_key='private',
-                           consumer_secret='private')
+auth = tweepy.OAuthHandler(consumer_key='F5kphzVfDT5Y5taE467x8dDzX',
+                           consumer_secret='5dleu5PeeQ8RXziaOflaXA6jVmGScZNpMvQ7qdrXF29z8l7UbQ')
 
-auth.set_access_token(key='private',
-                      secret='private')
+auth.set_access_token(key='797971904258772996-42sBRXzXu6o4o7lquisdw3RsZ3uoJ3l',
+                      secret='RzeKkSzzd5kbzrr0NOu2z3J6E5AULCO6xVUuVVyx9r2NC')
 
 api = tweepy.API(auth)
 
@@ -68,9 +68,10 @@ class Source(object):
                 for tweet in new_tweets:
                     text = tweet.text
                     tweet_id = tweet.id_str
+                    time = str(tweet.created_at.hour) + ':' + str(tweet.created_at.minute)
 
                     if 'RT @' and '"@' not in text:
-                        data = {'id': tweet_id, 'text': text}
+                        data = {'id': tweet_id, 'text': text, 'time': time}
                         new_tweets_dicts.append(data)
 
                 # Appends the data to the end of the archive
@@ -235,7 +236,7 @@ class TweetBuilder(object):
 
             # This will be the list of words after some modifications might be made
             better_tweet_list_words = []
-            
+
             for index, word in enumerate(tweet_list_words):
 
                 # At some point during this program, ampersands get messed up. This fixes it.
@@ -333,38 +334,6 @@ class Bot(object):
 
                 api.create_favorite(tweet.id)
 
-    @staticmethod
-    def unfollow_people():
-        # Unfollows people who have not followed back (gotta keep that ratio good)
-        my_followers = api.followers_ids()
-        following = api.friends_ids()
-
-        # Excludes the 40 most recent followers, give them some time to decide
-        following = following[:-40]
-
-        # People that are allowed to not follow me back
-        whitelist = [25073877, 705113652471439361, 805070473839177728, 799735756411408384, 804438219676712960]
-
-        for user in following:
-            if user not in my_followers and user not in whitelist:
-                api.destroy_friendship(id=user)
-
-    @staticmethod
-    def follow_people():
-        # Follows people who have recently followed the real Trump
-        trump_followers = api.followers('realDonaldTrump')
-
-        for user in trump_followers:
-            user_id = user.id
-            api.create_friendship(user_id)
-
-        # Follows people who have recently tweeted about Trump
-        search_results = api.search('Trump')
-
-        for tweet in search_results:
-            user_id = tweet.author.id
-            api.create_friendship(user_id)
-
     def wake_up(self):
         # This runs every time DonaldTrumBot wakes up
         self.reply_to_people()
@@ -374,8 +343,6 @@ class Bot(object):
             string_to_tweet = self.tweet_builder.create_tweet(username_to_reply_to='')
             api.update_status(string_to_tweet)
 
-            Bot.unfollow_people()
-            Bot.follow_people()
 
 # The csv file that contains all of Trump's tweets
 csvFileName = 'TrumpTweetsArchive.csv'
