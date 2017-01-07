@@ -2,7 +2,6 @@ import random
 import tweepy
 import pandas as pd
 from numpy.random import choice
-import time
 
 print('Waking up...')
 
@@ -54,14 +53,14 @@ class Source(object):
             # Imports the csv archive and finds the tweet in there with the highest id i.e the newest one
             ids = pd.read_csv(self.archive, usecols=[1])
             ids_list = list(set(ids['id']))
-            newest_id = max(ids_list)
+            highest_id = max(ids_list)
 
             # If the last tweet in the archive isn't the last thing tweeted, download all new tweets
             last_tweet_id = int(api.user_timeline(screen_name='@realDonaldTrump', count=200)[0].id_str)
 
-            if newest_id < last_tweet_id:
+            if highest_id < last_tweet_id:
 
-                new_tweets = download_new_tweets(newest_id)
+                new_tweets = download_new_tweets(highest_id)
 
                 # Creates a list of dictionaries with tweet id and text as keys
                 new_tweets_dicts = []
@@ -82,9 +81,9 @@ class Source(object):
         def create_list_of_tweets():
             # Takes the text of all tweets in the archive and makes them into a list
             texts = pd.read_csv(self.archive, usecols=[2], encoding="ISO-8859-1")
-            source = list(set(texts['text']))
+            list_of_tweets = list(set(texts['text']))
 
-            return source
+            return list_of_tweets
 
         self.archive = archive
         self.n = n
@@ -113,12 +112,22 @@ class Source(object):
                         letters.append(tweet[index + i])
                         i += 1
 
-                    key1 = tuple(letters[:-1])
-                    key2 = letters[-1]
-                    letter_bank.setdefault(key1, {})
-                    letter_bank[key1].setdefault(key2, 0)
-                    letter_bank[key1][key2] += 1
+                    # Creates a tuple of some of the letters that follow the current character. This will be looked at
+                    # later when the last letters of the Markov chain are this sequence
+                    sequence_key = tuple(letters[:-1])
 
+                    # This is the letter that comes after the sequence assigned above. When the sequence above is found
+                    # at the end of a tweet, this letter is one possibility for what comes after
+                    next_letter_key = letters[-1]
+
+                    # Creates a top-level key for the letter sequence if it does not exist. The value will be a
+                    # dictionary, with every letter that came immediately after the sequence as the keys and the number
+                    # of times each letter occurred as the values
+                    letter_bank.setdefault(sequence_key, {})
+                    letter_bank[sequence_key].setdefault(next_letter_key, 0)
+                    letter_bank[sequence_key][next_letter_key] += 1
+
+                    # Ends the loop when the sequence being looked at would look past the end of the tweet.
                     if index == len(tweet) - self.n:
                         break
 
@@ -149,12 +158,6 @@ class TweetBuilder(object):
         def create_markov():
             # Uses a Markov chain to create a tweet imitating Donald Trump
             # Returns the tweet in a list of characters
-
-            def get_bottom_dict(dic, keys):
-                # Returns the bottom-most dictionary in a nested dictionary, given a list of keys to look down through
-                for key in keys:
-                    dic = dic.get(key)
-                return dic
 
             # Calculates the amount of space to leave for @username if the tweet is a reply
             if len(username_to_reply_to) is 0:
@@ -299,9 +302,9 @@ class Bot(object):
             replies_to_me = api.search('@DonaldTrumBot')
 
             # Adds the ID of all non-retweets to a list
-            for tweet in replies_to_me:
-                if hasattr(tweet, 'retweeted_status'):
-                    replies_to_me.remove(tweet)
+            for reply in replies_to_me:
+                if hasattr(reply, 'retweeted_status'):
+                    replies_to_me.remove(reply)
 
             return replies_to_me
 
@@ -309,8 +312,8 @@ class Bot(object):
             # Gets a list of every tweet that TrumBot has favorited
             list_of_ids = []
 
-            for tweet in tweepy.Cursor(api.favorites).items():
-                list_of_ids.append(tweet.id)
+            for favorited_tweet in tweepy.Cursor(api.favorites).items():
+                list_of_ids.append(favorited_tweet.id)
 
             return list_of_ids
 
@@ -381,11 +384,14 @@ numberOfLettersUsed = 11
 # Creates the object that processes all of the tweets in the csv file
 source = Source(archive=csvFileName, n=numberOfLettersUsed)
 
+# Creates the object that builds the Markov chains turns them into tweets
 tweetBuilder = TweetBuilder(source_object=source, n=numberOfLettersUsed)
 
+# Creates the object that interfaces with Twitter
 donaldTrumBot = Bot(tweet_builder=tweetBuilder, minutes_between_reply_checks=10,
                     number_of_times_to_tweet_per_day=1)
 
+# This runs through all the functions the bot should do and things it should check
 donaldTrumBot.wake_up()
 
 print('Going back to sleep...')
