@@ -1,6 +1,6 @@
 import random
 import tweepy
-import pandas as pd
+import sqlite3
 from numpy.random import choice
 
 print('Waking up...')
@@ -20,7 +20,7 @@ class Source(object):
 
     def __init__(self, archive, n):
         def update_archive():
-            # Updates the csv file with all the tweets that are not in it yet
+            # Updates the db file with all the tweets that are not in it yet
 
             def download_new_tweets(newest_id):
                 # Downloads all tweets that are more recent than the one with the given ID
@@ -50,10 +50,9 @@ class Source(object):
 
                 return all_tweets
 
-            # Imports the csv archive and finds the tweet in there with the highest id i.e the newest one
-            ids = pd.read_csv(self.archive, usecols=[1])
-            ids_list = list(set(ids['id']))
-            highest_id = max(ids_list)
+            # Gets the highest tweet ID in the archive
+            cursor.execute('SELECT MAX(id) FROM tweets')
+            highest_id = cursor.fetchone()[0]
 
             # If the last tweet in the archive isn't the last thing tweeted, download all new tweets
             last_tweet_id = int(api.user_timeline(screen_name='@realDonaldTrump', count=200)[0].id_str)
@@ -62,35 +61,50 @@ class Source(object):
 
                 new_tweets = download_new_tweets(highest_id)
 
-                # Creates a list of dictionaries with tweet id and text as keys
-                new_tweets_dicts = []
+                # Creates a list of tuples containing the data (id, tweet text, and time)
+                new_tweets_list = []
 
                 for tweet in new_tweets:
-                    text = tweet.text
                     tweet_id = tweet.id_str
-                    time = str(tweet.created_at.hour) + ':' + str(tweet.created_at.minute)
+                    text = tweet.text
+                    tweet_time = tweet.created_at
 
-                    if 'RT @' and '"@' not in text:
-                        data = {'id': tweet_id, 'text': text, 'time': time}
-                        new_tweets_dicts.append(data)
+                    # Makes sure that not retweets make it into the archive.
+                    if 'RT @' not in text and '"@' not in text:
+                        data = (tweet_id, text, tweet_time)
+                        new_tweets_list.append(data)
 
-                # Appends the data to the end of the archive
-                df = pd.DataFrame(new_tweets_dicts)
-                df.to_csv(self.archive, mode='a', header=False)
+                # Puts all the tuples into the db file
+                cursor.executemany('INSERT INTO tweets(id, text, time) VALUES(?,?,?)', new_tweets_list)
+                db.commit()
 
         def create_list_of_tweets():
             # Takes the text of all tweets in the archive and makes them into a list
-            texts = pd.read_csv(self.archive, usecols=[2], encoding="ISO-8859-1")
-            list_of_tweets = list(set(texts['text']))
+
+            cursor.execute('SELECT text FROM tweets')
+
+            # The fetchall returns a list of tuples with one value each, we need them to be strings
+            list_of_tweets_tuples = cursor.fetchall()
+
+            # The list of strings
+            list_of_tweets = []
+
+            for tweet in list_of_tweets_tuples:
+                list_of_tweets.append(tweet[0])
 
             return list_of_tweets
 
         self.archive = archive
         self.n = n
 
+        db = sqlite3.connect(archive)
+        cursor = db.cursor()
+
         update_archive()
 
         self.list_of_tweets = create_list_of_tweets()
+
+        db.close()
 
     def create_letter_bank(self):
         # Creates the nested dictionary of letters to use
@@ -241,7 +255,7 @@ class TweetBuilder(object):
 
                 # At some point during this program, ampersands get messed up. This fixes it.
                 if word is '&amp;' or word is '&amp':
-                    better_tweet_list_words.append(word)
+                    better_tweet_list_words.append('&')
 
                 # Sometimes the chain will end on the period in a link. If so, do not include it
                 elif word != 'https://t.' or word != 'http://t.':
@@ -290,7 +304,7 @@ class Bot(object):
         # Checks if it's time to tweet
         random_number = random.choice(self.listy)
 
-        if random_number == 0:
+        if random_number is 0:
             print('Tweeting...')
             return True
         else:
@@ -341,17 +355,18 @@ class Bot(object):
         # Runs if it is time to tweet
         if self.check_if_time_to_tweet():
             string_to_tweet = self.tweet_builder.create_tweet(username_to_reply_to='')
+            print(string_to_tweet)
             api.update_status(string_to_tweet)
 
 
-# The csv file that contains all of Trump's tweets
-csvFileName = 'TrumpTweetsArchive.csv'
+# The db file that contains all of Trump's tweets
+archiveFileName = 'TrumpTweets.db'
 
-# The number of letters that will be used to build the chain
+# The number of letters that will be used to build the chain`
 numberOfLettersUsed = 11
 
 # Creates the object that processes all of the tweets in the csv file
-source = Source(archive=csvFileName, n=numberOfLettersUsed)
+source = Source(archive=archiveFileName, n=numberOfLettersUsed)
 
 # Creates the object that builds the Markov chains turns them into tweets
 tweetBuilder = TweetBuilder(source_object=source, n=numberOfLettersUsed)
