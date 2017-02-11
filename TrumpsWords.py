@@ -211,8 +211,7 @@ class Bot(object):
         # Checks if it's time to tweet
         random_number = random.choice(self.listy)
 
-        if True:
-        #if random_number is 0:
+        if random_number is 0:
             print('Tweeting...')
             return True
         else:
@@ -264,7 +263,7 @@ class Bot(object):
         if self.check_if_time_to_tweet():
             string_to_tweet = self.tweet_builder.create_tweet(username_to_reply_to='')
             print(string_to_tweet)
-            #api.update_status(string_to_tweet)
+            api.update_status(string_to_tweet)
 
 
 # The db file that contains all of Trump's tweets
