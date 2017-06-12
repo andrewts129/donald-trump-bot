@@ -1,16 +1,23 @@
-#!/usr/bin/env python
-
 import spacy
 import sqlite3
 import tweepy
 import pickle
+import itertools
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
+import configparser
 
-auth = tweepy.OAuthHandler(consumer_key='F5kphzVfDT5Y5taE467x8dDzX',
-                           consumer_secret='5dleu5PeeQ8RXziaOflaXA6jVmGScZNpMvQ7qdrXF29z8l7UbQ')
-auth.set_access_token(key='797971904258772996-42sBRXzXu6o4o7lquisdw3RsZ3uoJ3l',
-                      secret='RzeKkSzzd5kbzrr0NOu2z3J6E5AULCO6xVUuVVyx9r2NC')
+config = configparser.ConfigParser()
+config.read('TwitterKeys.ini')
+consumerKey = config['Tweepy']['consumer_key']
+consumerSecret = config['Tweepy']['consumer_secret']
+accessToken = config['Tweepy']['access_token']
+accessSecret = config['Tweepy']['access_secret']
+
+auth = tweepy.OAuthHandler(consumer_key=consumerKey,
+                           consumer_secret=consumerSecret)
+auth.set_access_token(key=accessToken,
+                      secret=accessSecret)
 api = tweepy.API(auth)
 
 nlp = spacy.load('en')
@@ -74,6 +81,9 @@ class Source(object):
 
             if highest_id < last_tweet_id:
 
+                sources_to_use = """TweetDeckTwitlongerFacebookTwitter for AndroidTwitter for iPadTwitter Web ClientTwit
+                Longer Beta"""
+
                 new_tweets = download_new_tweets(highest_id)
 
                 # Creates a list of tuples containing the data (id, tweet text, and time)
@@ -82,15 +92,15 @@ class Source(object):
                 for tweet in new_tweets:
                     tweet_id = tweet.id_str
                     text = tweet.text
-                    tweet_time = tweet.created_at
+                    tweet_source = tweet.source
 
                     # Makes sure that not retweets make it into the archive.
-                    if 'RT @' not in text and '"@' not in text:
-                        data = (tweet_id, text, tweet_time)
+                    if 'RT @' not in text and '"@' not in text and tweet_source in sources_to_use:
+                        data = (tweet_id, text, tweet_source)
                         new_tweets_list.append(data)
 
                 # Puts all the tuples into the db file
-                cursor.executemany('INSERT INTO tweets(id, text, time) VALUES(?,?,?)', new_tweets_list)
+                cursor.executemany('INSERT INTO tweets(id, text, source) VALUES(?,?,?)', new_tweets_list)
                 db.commit()
 
         def create_list_of_tweets():
@@ -109,6 +119,15 @@ class Source(object):
 
             return list_of_tweets
 
+        def create_list_of_speech_paragraphs():
+            # Takes all of the text from a giant txt file of many of Trump's speeches and organizes them into a
+            # list by line breaks (usually indicating a paragraph change)
+
+            with open("AllTrumpSpeechesCleaned.txt") as file:
+                speeches = file.readlines()
+
+            return speeches
+
         self.archive = archive
         self.n = n
 
@@ -118,6 +137,8 @@ class Source(object):
         update_archive()
 
         self.list_of_tweets = create_list_of_tweets()
+
+        self.list_of_speech_paragraphs = create_list_of_speech_paragraphs()
 
         db.close()
 
@@ -141,8 +162,8 @@ class Source(object):
 
         starter_list = []
 
-        # Goes through every tweet in the archive
-        for tweet in self.list_of_tweets:
+        # Goes through every tweet/sentence in the archive
+        for tweet in itertools.chain(self.list_of_tweets, self.list_of_speech_paragraphs):
             nlp_sentence = nlp(str(tweet))
 
             for index, token in enumerate(nlp_sentence):
@@ -200,6 +221,7 @@ googleAuth.LocalWebserverAuth()
 drive = GoogleDrive(googleAuth)
 
 for file in drive.ListFile().GetList():
+    print(file['title'])
     if file['title'] == 'wordbank.pkl':
         file.SetContentFile('wordbank.pkl')
         file.Upload()
