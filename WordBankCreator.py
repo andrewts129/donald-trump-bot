@@ -5,6 +5,11 @@ import pickle
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import configparser
+import zipfile
+import tempfile
+import json
+import requests
+from io import BytesIO
 
 # Getting settings that are shared between this script and the tweeting script
 shared_configs = configparser.ConfigParser()
@@ -19,6 +24,10 @@ ARCHIVE_FILE_NAME = "TrumpTweets.db"
 # Text file that contains all of Trump's speeches
 SPEECH_FILE_NAME = "AllTrumpSpeechesCleaned.txt"
 
+# TODO
+TWEET_REPO_BASE_URL = "https://github.com/bpb27/trump_tweet_data_archive/raw/master/condensed_%YEAR%.json.zip"
+JSON_BASE_NAME = "condensed_%YEAR%.json"
+
 # Getting access to the Twitter API. Authentication data comes from TwitterKeys.ini
 api_keys_config = configparser.ConfigParser()
 api_keys_config.read("TwitterKeys.ini")
@@ -30,6 +39,58 @@ api = tweepy.API(auth)
 
 
 # TODO Make sure that the archive only contains tweets that we should use
+def create_tweet_database():
+    data_to_write = []
+    years_to_use = list(range(2013, 2018))
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for year in years_to_use:
+            url = TWEET_REPO_BASE_URL.replace("%YEAR%", str(year))
+
+            zippy = requests.get(url)
+
+            zipped_file = zipfile.ZipFile(BytesIO(zippy.content), "r")
+            zipped_file.extractall(temp_dir)
+            zipped_file.close()
+
+            with open(temp_dir + "/" + JSON_BASE_NAME.replace("%YEAR%", str(year))) as json_file:
+                raw_tweets = json.load(json_file)
+
+            for raw_tweet in raw_tweets:
+                if raw_tweet["is_retweet"] is False and should_use_tweet(raw_tweet["text"], raw_tweet["source"]):
+                    data = (raw_tweet["id_str"], raw_tweet["text"], raw_tweet["source"], raw_tweet["created_at"])
+                    data_to_write.append(data)
+
+    db = sqlite3.connect(ARCHIVE_FILE_NAME)
+    cursor = db.cursor()
+
+    # id is the id of every tweet, as assigned by Twitter
+    cursor.execute("CREATE TABLE tweets(id INTEGER PRIMARY KEY, text TEXT, source TEXT, time TEXT)")
+    db.commit()
+
+    cursor.executemany("INSERT INTO tweets(id, text, source, time) VALUES(?,?,?,?)", data_to_write)
+    db.commit()
+
+
+# TODO
+def should_use_tweet(text, source):
+
+    # The Sources that seem to contain actual tweets from Trump
+    acceptable_sources = ["Twitter for Android", "Twitter for iPad", "Twitter for iPhone", "Twitter Web Client",
+                          "Twitter for BlackBerry"]
+
+    # Exclude retweets, his weird manual retweets, and replies
+    unacceptable_starts = ["RT", '"@', "@", "Via"]
+
+    # Trump himself also doesn't use links or hashtags at all
+    unacceptable_strings = ["t.co", "#", ".ly", ".com"]
+
+    # Return true if the tweet comes from an acceptable source, doesn't start with something bad, and doesn't
+    # have a string that indicates Trump didn't write it
+    return source in acceptable_sources \
+        and not any(text.startswith(x) for x in unacceptable_starts) \
+        and not any((x in text) for x in unacceptable_strings)
+
 
 # When called, this will update the SQLite database that contains all of @realDonaldTrump's tweets with all of the
 # newer tweets that are not currently in it.
@@ -59,24 +120,6 @@ def update_tweet_archive(archive_file_path):
             oldest_id = all_tweets[-1].id - 1
 
         return all_tweets
-
-    # TODO
-    def should_use_tweet(text, source):
-
-        # The Sources that seem to contain actual tweets from Trump
-        acceptable_sources = ["Twitter for Android", "Twitter for iPad", "Twitter for iPhone", "Twitter Web Client"]
-
-        # Exclude retweets, his weird manual retweets, and replies
-        unacceptable_starts = ["RT", '"@', "@"]
-
-        # Trump himself also doesn't use links or hashtags at all
-        unacceptable_strings = ["t.co", "#"]
-
-        # Return true if the tweet comes from an acceptable source, doesn't start with something bad, and doesn't
-        # have a string that indicates Trump didn't write it
-        return source in acceptable_sources \
-            and not any(text.startswith(x) for x in unacceptable_starts) \
-            and not any((x in text) for x in unacceptable_strings)
 
     db = sqlite3.connect(archive_file_path)
     cursor = db.cursor()
@@ -227,7 +270,7 @@ def main():
 
         # Gets the first n words of the tweet and stores it as a possible starter for building tweets later
         if should_be_starter(str(tweet)):
-            tweet_starter = tweet_ngrams[0][:-1]
+            tweet_starter = tweet_ngrams[:NUMBER_OF_WORDS_USED]
             starter_words.append(tweet_starter)
 
         for ngram in tweet_ngrams:
@@ -243,9 +286,10 @@ def main():
         for ngram in speech_ngrams:
             update_frequency(word_frequency_bank, ngram)
 
-    upload(word_frequency_bank, starter_words)
-
+    #upload(word_frequency_bank, starter_words)
     print('done')
 
+    return tuple([word_frequency_bank, starter_words])
+
 if __name__ == "__main__":
-    main()
+    w, s = main()
