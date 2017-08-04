@@ -2,7 +2,6 @@ import spacy
 import sqlite3
 import tweepy
 import pickle
-import itertools
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import configparser
@@ -15,7 +14,10 @@ shared_configs.read("Config.ini")
 NUMBER_OF_WORDS_USED = int(shared_configs["Configuration"]["NUMBER_OF_WORDS_USED"])
 
 # The db file that contains all of Trump's tweets
-ARCHIVE_FILE_NAME = 'TrumpTweets.db'
+ARCHIVE_FILE_NAME = "TrumpTweets.db"
+
+# Text file that contains all of Trump's speeches
+SPEECH_FILE_NAME = "AllTrumpSpeechesCleaned.txt"
 
 # Getting access to the Twitter API. Authentication data comes from TwitterKeys.ini
 api_keys_config = configparser.ConfigParser()
@@ -32,7 +34,6 @@ api = tweepy.API(auth)
 # When called, this will update the SQLite database that contains all of @realDonaldTrump's tweets with all of the
 # newer tweets that are not currently in it.
 def update_tweet_archive(archive_file_path):
-
     # Downloads all tweets that are more recent than the one with the given ID
     def download_new_tweets(newest_id):
         all_tweets = []
@@ -59,21 +60,23 @@ def update_tweet_archive(archive_file_path):
 
         return all_tweets
 
-    #TODO
-    def should_use_tweet(tweet_text, tweet_source):
+    # TODO
+    def should_use_tweet(text, source):
 
         # The Sources that seem to contain actual tweets from Trump
         acceptable_sources = ["Twitter for Android", "Twitter for iPad", "Twitter for iPhone", "Twitter Web Client"]
 
-        # Exclude retweets and his weird manual retweets
-        unacceptable_starts = ["RT @", '"@']
+        # Exclude retweets, his weird manual retweets, and replies
+        unacceptable_starts = ["RT", '"@', "@"]
 
-        # Trump himself also doesn't use links or hashtags
-        if tweet_source in acceptable_sources and not tweet_text.startswith(any(unacceptable_starts)) and \
-                "#" not in tweet_text and "t.co" not in tweet_text:
-            return True
-        else:
-            return False
+        # Trump himself also doesn't use links or hashtags at all
+        unacceptable_strings = ["t.co", "#"]
+
+        # Return true if the tweet comes from an acceptable source, doesn't start with something bad, and doesn't
+        # have a string that indicates Trump didn't write it
+        return source in acceptable_sources \
+            and not any(text.startswith(x) for x in unacceptable_starts) \
+            and not any((x in text) for x in unacceptable_strings)
 
     db = sqlite3.connect(archive_file_path)
     cursor = db.cursor()
@@ -94,12 +97,12 @@ def update_tweet_archive(archive_file_path):
 
         for tweet in new_tweets:
             tweet_id = tweet.id_str
-            text = tweet.text
+            tweet_text = tweet.text
             tweet_source = tweet.source
 
             # Makes sure that only tweets that probably actually came from Trump are put into the archive
-            if should_use_tweet(text, tweet_source):
-                data = (tweet_id, text, tweet_source)
+            if should_use_tweet(tweet_text, tweet_source):
+                data = (tweet_id, tweet_text, tweet_source)
                 new_tweets_list.append(data)
 
         # Puts all the tuples into the db file
@@ -131,8 +134,7 @@ def get_tweets_as_strings(archive_file_path):
 # Returns a list of all the n-grams of NUMBER_OF_WORDS_USED length in the sentence, with each gram
 # consisting of a word and its part of speech
 def get_ngrams(sentence, nlp):
-
-    #TODO Better variable name
+    # TODO Better variable name
     list_of_ngrams = []
 
     tokenized_sentence = nlp(sentence)
@@ -166,7 +168,7 @@ def get_ngrams(sentence, nlp):
 
 # TODO
 def update_frequency(master_frequency_dict, ngrams):
-    preceding_words = tuple(ngrams[:-1]) # Tupled so it can be a dict key
+    preceding_words = tuple(ngrams[:-1])  # Tupled so it can be a dict key
     predicted_word = ngrams[-1]
 
     master_frequency_dict.setdefault(preceding_words, {})
@@ -176,12 +178,41 @@ def update_frequency(master_frequency_dict, ngrams):
 
 # TODO
 def should_be_starter(tweet_text):
-    if tweet_text.startswith(".@"):
-        return False
-    else:
-        return True
+    return not tweet_text.startswith(".@")
 
-if __name__ == "__main__":
+
+# TODO
+def get_speeches():
+    with open(SPEECH_FILE_NAME) as file:
+        speeches = file.readlines()
+
+    return speeches
+
+
+def upload(word_freqs, starters):
+
+    with open('wordbank.pkl', 'wb') as file:
+        pickle.dump(word_freqs, file)
+
+    with open('starters.pkl', 'wb') as file:
+        pickle.dump(starters, file)
+
+    googleAuth = GoogleAuth()
+    googleAuth.LocalWebserverAuth()
+    drive = GoogleDrive(googleAuth)
+
+    for file in drive.ListFile().GetList():
+        print(file['title'])
+        if file['title'] == 'wordbank.pkl':
+            file.SetContentFile('wordbank.pkl')
+            file.Upload()
+
+        elif file['title'] == 'starters.pkl':
+            file.SetContentFile('starters.pkl')
+            file.Upload()
+
+
+def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
     nlp = spacy.load("en")
@@ -201,3 +232,20 @@ if __name__ == "__main__":
 
         for ngram in tweet_ngrams:
             update_frequency(word_frequency_bank, ngram)
+
+    speeches = get_speeches()
+
+    for speech in speeches:
+        speech_ngrams = get_ngrams(speech, nlp)
+
+        # To keep things Twittery, do not use speeches as starter sequences
+
+        for ngram in speech_ngrams:
+            update_frequency(word_frequency_bank, ngram)
+
+    upload(word_frequency_bank, starter_words)
+
+    print('done')
+
+if __name__ == "__main__":
+    main()
