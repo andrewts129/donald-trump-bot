@@ -24,7 +24,7 @@ ARCHIVE_FILE_NAME = "TrumpTweets.db"
 # Text file that contains all of Trump's speeches
 SPEECH_FILE_NAME = "AllTrumpSpeechesCleaned.txt"
 
-# TODO
+# Used for getting the JSON files that contain all of Trump's tweets
 TWEET_REPO_BASE_URL = "https://github.com/bpb27/trump_tweet_data_archive/raw/master/condensed_%YEAR%.json.zip"
 JSON_BASE_NAME = "condensed_%YEAR%.json"
 
@@ -38,8 +38,11 @@ auth.set_access_token(key=api_keys_config["TwitterAuth"]["ACCESS_TOKEN"],
 api = tweepy.API(auth)
 
 
-# TODO Make sure that the archive only contains tweets that we should use
 def create_tweet_database():
+    """Downloads all of Trump's tweets from a github repo and stores the ones written by him in TrumpTweets.db. This is
+    not run as part of main, it only needs to be updated whenever changes to the accepted tweets (as specified in
+    should_use_tweet()) are made"""
+
     data_to_write = []
     years_to_use = list(range(2013, 2018))
 
@@ -47,16 +50,19 @@ def create_tweet_database():
         for year in years_to_use:
             url = TWEET_REPO_BASE_URL.replace("%YEAR%", str(year))
 
+            # Downloads the zipped json and unzips it into the temp directory created above
             zippy = requests.get(url)
-
             zipped_file = zipfile.ZipFile(BytesIO(zippy.content), "r")
             zipped_file.extractall(temp_dir)
             zipped_file.close()
 
+            # Reads the newly-unzipped json into a list of Javascript-type objects
             with open(temp_dir + "/" + JSON_BASE_NAME.replace("%YEAR%", str(year))) as json_file:
                 raw_tweets = json.load(json_file)
 
             for raw_tweet in raw_tweets:
+
+                # Don't use retweets or tweets that would fail the conditions set by should_use_tweet
                 if raw_tweet["is_retweet"] is False and should_use_tweet(raw_tweet["text"], raw_tweet["source"]):
                     data = (raw_tweet["id_str"], raw_tweet["text"], raw_tweet["source"], raw_tweet["created_at"])
                     data_to_write.append(data)
@@ -72,8 +78,12 @@ def create_tweet_database():
     db.commit()
 
 
-# TODO
 def should_use_tweet(text, source):
+    """Determines whether a tweet should be used by the bot to construct new tweets
+
+        Args:
+            text - the text of the tweet, as a String
+            source - the Twitter client the tweet came from, as a String in the form "Twitter for Android" """
 
     # The Sources that seem to contain actual tweets from Trump
     acceptable_sources = ["Twitter for Android", "Twitter for iPad", "Twitter for iPhone", "Twitter Web Client",
@@ -92,11 +102,17 @@ def should_use_tweet(text, source):
         and not any((x in text) for x in unacceptable_strings)
 
 
-# When called, this will update the SQLite database that contains all of @realDonaldTrump's tweets with all of the
-# newer tweets that are not currently in it.
 def update_tweet_archive(archive_file_path):
-    # Downloads all tweets that are more recent than the one with the given ID
+    """When called, this will update the SQLite database that contains all of @realDonaldTrump's tweets with all of the
+    newer tweets that are not currently in it.
+
+    Args:
+        archive_file_path - the name of the .db file that tweets are stored in (created with create_tweet_database())
+    """
+
     def download_new_tweets(newest_id):
+        """Downloads all tweets from @realDonaldTrump that are more recent than the one with the given ID"""
+
         all_tweets = []
 
         # make initial request for most recent tweets (200 is the maximum allowed count)
@@ -142,24 +158,27 @@ def update_tweet_archive(archive_file_path):
             tweet_id = tweet.id_str
             tweet_text = tweet.text
             tweet_source = tweet.source
+            tweet_time = tweet.created_at
 
             # Makes sure that only tweets that probably actually came from Trump are put into the archive
             if should_use_tweet(tweet_text, tweet_source):
-                data = (tweet_id, tweet_text, tweet_source)
+                data = (tweet_id, tweet_text, tweet_source, tweet_time)
                 new_tweets_list.append(data)
 
         # Puts all the tuples into the db file
-        cursor.executemany('INSERT INTO tweets(id, text, source) VALUES(?,?,?)', new_tweets_list)
+        cursor.executemany("INSERT INTO tweets(id, text, source, time) VALUES(?,?,?,?)", new_tweets_list)
         db.commit()
         cursor.close()
 
 
-# Returns the tweets that will be used in building the Markov chain as a list of strings
 def get_tweets_as_strings(archive_file_path):
+    """Returns the tweets that will be used in building the Markov chain as a list of strings from the .db file created
+    in create_tweet_database()"""
+
     db = sqlite3.connect(archive_file_path)
     cursor = db.cursor()
 
-    cursor.execute('SELECT text FROM tweets')
+    cursor.execute("SELECT text FROM tweets")
 
     # The fetchall returns a list of tuples with one value each, we need them to be strings
     list_of_tweets_tuples = cursor.fetchall()
@@ -174,15 +193,20 @@ def get_tweets_as_strings(archive_file_path):
     return list_of_tweets
 
 
-# Returns a list of all the n-grams of NUMBER_OF_WORDS_USED length in the sentence, with each gram
-# consisting of a word and its part of speech
 def get_ngrams(sentence, nlp):
-    # TODO Better variable name
+    """Returns a list of all the n-grams of NUMBER_OF_WORDS_USED length in the sentence, with each gram consisting of a
+    word and its part of speech
+
+    Args:
+        sentence - a string of words
+        nlp - an loaded instance of Spacy
+    """
     list_of_ngrams = []
 
     tokenized_sentence = nlp(sentence)
 
-    # TODO Explain this better
+    # Loops over the sentence, skipping the first n words because they don't have enough preceding words to create
+    # prediction probabilities
     for index, token in enumerate(tokenized_sentence[NUMBER_OF_WORDS_USED:]):
 
         # Compensate for the string slicing above by moving the index forwards to it's proper place in the original
@@ -209,8 +233,14 @@ def get_ngrams(sentence, nlp):
     return list_of_ngrams
 
 
-# TODO
 def update_frequency(master_frequency_dict, ngrams):
+    """Given a tuple of at least two items, update the dictionary to show that the first n-1 words preceded the last
+    once more
+
+    Args:
+        master_frequency_dict - the dictionary that will be updated
+        ngrams - a list of tuples at least 2 long
+    """
     preceding_words = tuple(ngrams[:-1])  # Tupled so it can be a dict key
     predicted_word = ngrams[-1]
 
@@ -219,13 +249,13 @@ def update_frequency(master_frequency_dict, ngrams):
     master_frequency_dict[preceding_words][predicted_word] += 1
 
 
-# TODO
 def should_be_starter(tweet_text):
+    """Return true if the first few words of the string should be used as a starting point for building a tweet"""
     return not tweet_text.startswith(".@")
 
 
-# TODO
 def get_speeches():
+    """Loads Trump's speeches as a list of Strings, with each entry being a paragraph"""
     with open(SPEECH_FILE_NAME) as file:
         speeches = file.readlines()
 
@@ -233,6 +263,7 @@ def get_speeches():
 
 
 def upload(word_freqs, starters):
+    """Uploaded the two files to my Google Drive as pickles"""
 
     with open('wordbank.pkl', 'wb') as file:
         pickle.dump(word_freqs, file)
@@ -240,9 +271,9 @@ def upload(word_freqs, starters):
     with open('starters.pkl', 'wb') as file:
         pickle.dump(starters, file)
 
-    googleAuth = GoogleAuth()
-    googleAuth.LocalWebserverAuth()
-    drive = GoogleDrive(googleAuth)
+    google_auth = GoogleAuth()
+    google_auth.LocalWebserverAuth()
+    drive = GoogleDrive(google_auth)
 
     for file in drive.ListFile().GetList():
         print(file['title'])
@@ -270,8 +301,11 @@ def main():
 
         # Gets the first n words of the tweet and stores it as a possible starter for building tweets later
         if should_be_starter(str(tweet)):
-            tweet_starter = tweet_ngrams[:NUMBER_OF_WORDS_USED]
-            starter_words.append(tweet_starter)
+            try:
+                tweet_starter = tweet_ngrams[0][:NUMBER_OF_WORDS_USED]
+                starter_words.append(tweet_starter)
+            except IndexError:
+                pass
 
         for ngram in tweet_ngrams:
             update_frequency(word_frequency_bank, ngram)
@@ -286,10 +320,8 @@ def main():
         for ngram in speech_ngrams:
             update_frequency(word_frequency_bank, ngram)
 
-    #upload(word_frequency_bank, starter_words)
+    upload(word_frequency_bank, starter_words)
     print('done')
 
-    return tuple([word_frequency_bank, starter_words])
-
 if __name__ == "__main__":
-    w, s = main()
+    main()
