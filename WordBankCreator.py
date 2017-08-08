@@ -90,10 +90,10 @@ def should_use_tweet(text, source):
                           "Twitter for BlackBerry"]
 
     # Exclude retweets, his weird manual retweets, and replies
-    unacceptable_starts = ["RT", '"@', "@", "Via"]
+    unacceptable_starts = ["RT", '"@', "@", "'@", "Via"]
 
-    # Trump himself also doesn't use links or hashtags at all
-    unacceptable_strings = ["t.co", "#", ".ly", ".com"]
+    # Trump himself also doesn't use links or hashtags at all. Also get rid of his quotes
+    unacceptable_strings = ["t.co", "#", ".ly", ".com", "Thoreau", "Edison", "- Vince", "- Arnold", "Emerson"]
 
     # Return true if the tweet comes from an acceptable source, doesn't start with something bad, and doesn't
     # have a string that indicates Trump didn't write it
@@ -301,6 +301,8 @@ def main():
 
         # Gets the first n words of the tweet and stores it as a possible starter for building tweets later
         if should_be_starter(str(tweet)):
+
+            # There's one or two tweets that are only a word long, so this sometimes will throw an IndexError
             try:
                 tweet_starter = tweet_ngrams[0][:NUMBER_OF_WORDS_USED]
                 starter_words.append(tweet_starter)
@@ -313,6 +315,9 @@ def main():
     speeches = get_speeches()
 
     for speech in speeches:
+        # Get rid of the newline char at the end of every line
+        speech = speech.replace("\n", "\n")
+
         speech_ngrams = get_ngrams(speech, nlp)
 
         # To keep things Twittery, do not use speeches as starter sequences
