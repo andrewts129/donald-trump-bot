@@ -83,7 +83,8 @@ def should_use_tweet(text, source):
 
         Args:
             text - the text of the tweet, as a String
-            source - the Twitter client the tweet came from, as a String in the form "Twitter for Android" """
+            source - the Twitter client the tweet came from, as a String in the form "Twitter for Android"
+    """
 
     # The Sources that seem to contain actual tweets from Trump
     acceptable_sources = ["Twitter for Android", "Twitter for iPad", "Twitter for iPhone", "Twitter Web Client",
@@ -201,6 +202,7 @@ def get_ngrams(sentence, nlp):
         sentence - a string of words
         nlp - an loaded instance of Spacy
     """
+
     list_of_ngrams = []
 
     tokenized_sentence = nlp(sentence)
@@ -241,6 +243,7 @@ def update_frequency(master_frequency_dict, ngrams):
         master_frequency_dict - the dictionary that will be updated
         ngrams - a list of tuples at least 2 long
     """
+
     preceding_words = tuple(ngrams[:-1])  # Tupled so it can be a dict key
     predicted_word = ngrams[-1]
 
@@ -256,6 +259,7 @@ def should_be_starter(tweet_text):
 
 def get_speeches():
     """Loads Trump's speeches as a list of Strings, with each entry being a paragraph"""
+
     with open(SPEECH_FILE_NAME) as file:
         speeches = file.readlines()
 
