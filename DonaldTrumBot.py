@@ -206,8 +206,12 @@ def create_tweet(starter_words, word_frequencies):
     return tweet_string
 
 
-def post_tweet(tweet_string, status_id_to_reply_to=0):
-    api.update_status(tweet_string, status_id_to_reply_to)
+def post_tweet(tweet_string, status_id_to_reply_to=None):
+    if status_id_to_reply_to is None:
+        api.update_status(tweet_string)
+    else:
+        user_to_reply_to = api.get_status(status_id_to_reply_to).author.screen_name
+        api.update_status("@" + user_to_reply_to + " " + tweet_string, status_id_to_reply_to)
 
 
 def main():
