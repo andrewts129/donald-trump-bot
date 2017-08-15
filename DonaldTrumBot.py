@@ -21,10 +21,10 @@ WAKE_UP_INTERVAL = 10
 AVG_TIMES_TO_TWEET_PER_DAY = 2.5
 
 # Getting access to the Twitter API. Authentication data comes from environmental variables
-auth = tweepy.OAuthHandler(consumer_key=os.environ("TW_CONSUMER_KEY"),
-                           consumer_secret=os.environ("TW_CONSUMER_SECRET"))
-auth.set_access_token(key=os.environ("TW_ACCESS_TOKEN"),
-                      secret=os.environ("TW_ACCESS_SECRET"))
+auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
+                           consumer_secret=os.environ["TW_CONSUMER_SECRET"])
+auth.set_access_token(key=os.environ["TW_ACCESS_TOKEN"],
+                      secret=os.environ["TW_ACCESS_SECRET"])
 api = tweepy.API(auth)
 
 
