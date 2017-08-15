@@ -5,6 +5,7 @@ import pickle
 import requests
 import configparser
 import re
+import os
 
 # Getting settings that are shared between this script and the word bank building script
 shared_configs = configparser.ConfigParser()
@@ -19,14 +20,11 @@ WAKE_UP_INTERVAL = 10
 # The average number of times that the bot should tweet per day
 AVG_TIMES_TO_TWEET_PER_DAY = 2.5
 
-# Getting access to the Twitter API. Authentication data comes from TwitterKeys.ini
-config = configparser.ConfigParser()
-config.read("TwitterKeys.ini")
-
-auth = tweepy.OAuthHandler(consumer_key=config["TwitterAuth"]["CONSUMER_KEY"],
-                           consumer_secret=config["TwitterAuth"]["CONSUMER_SECRET"])
-auth.set_access_token(key=config["TwitterAuth"]["ACCESS_TOKEN"],
-                      secret=config["TwitterAuth"]["ACCESS_SECRET"])
+# Getting access to the Twitter API. Authentication data comes from environmental variables
+auth = tweepy.OAuthHandler(consumer_key=os.environ("TW_CONSUMER_KEY"),
+                           consumer_secret=os.environ("TW_CONSUMER_SECRET"))
+auth.set_access_token(key=os.environ("TW_ACCESS_TOKEN"),
+                      secret=os.environ("TW_ACCESS_SECRET"))
 api = tweepy.API(auth)
 
 

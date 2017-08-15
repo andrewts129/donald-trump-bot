@@ -10,6 +10,7 @@ import tempfile
 import json
 import requests
 from io import BytesIO
+import os
 
 # Getting settings that are shared between this script and the tweeting script
 shared_configs = configparser.ConfigParser()
@@ -28,13 +29,11 @@ SPEECH_FILE_NAME = "AllTrumpSpeechesCleaned.txt"
 TWEET_REPO_BASE_URL = "https://github.com/bpb27/trump_tweet_data_archive/raw/master/condensed_%YEAR%.json.zip"
 JSON_BASE_NAME = "condensed_%YEAR%.json"
 
-# Getting access to the Twitter API. Authentication data comes from TwitterKeys.ini
-api_keys_config = configparser.ConfigParser()
-api_keys_config.read("TwitterKeys.ini")
-auth = tweepy.OAuthHandler(consumer_key=api_keys_config["TwitterAuth"]["CONSUMER_KEY"],
-                           consumer_secret=api_keys_config["TwitterAuth"]["CONSUMER_SECRET"])
-auth.set_access_token(key=api_keys_config["TwitterAuth"]["ACCESS_TOKEN"],
-                      secret=api_keys_config["TwitterAuth"]["ACCESS_SECRET"])
+# Getting access to the Twitter API. Authentication data comes from environmental variables
+auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
+                           consumer_secret=os.environ["TW_CONSUMER_SECRET"])
+auth.set_access_token(key=os.environ["TW_ACCESS_TOKEN"],
+                      secret=os.environ["TW_ACCESS_SECRET"])
 api = tweepy.API(auth)
 
 
