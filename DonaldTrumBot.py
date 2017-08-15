@@ -226,8 +226,9 @@ def main():
         for reply in tweets_to_reply_to:
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
-            print("Replying to Tweet " + reply.id + " with: " + string_to_tweet)
+            print("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
             post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
+            api.create_favorite(reply.id)
 
         if should_make_tweet_now:
             print("Going to tweet...")
