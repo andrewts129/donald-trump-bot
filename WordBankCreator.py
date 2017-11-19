@@ -341,5 +341,6 @@ def main():
     upload(word_frequency_bank, starter_words)
     print('done')
 
+
 if __name__ == "__main__":
     main()

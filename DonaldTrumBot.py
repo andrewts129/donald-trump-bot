@@ -20,6 +20,9 @@ WAKE_UP_INTERVAL = 10
 # The average number of times that the bot should tweet per day
 AVG_TIMES_TO_TWEET_PER_DAY = 2.5
 
+# Max number of chars in a generated tweet. Should be <= Max number of chars allowed by Twitter
+MAX_TWEET_LENGTH = 200
+
 # Getting access to the Twitter API. Authentication data comes from environmental variables
 auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
                            consumer_secret=os.environ["TW_CONSUMER_SECRET"])
@@ -165,9 +168,9 @@ def create_tweet(starter_words, word_frequencies):
         else:
             return None
 
-    def cut_to_140_chars(string):
+    def cut_to_tweet_size(string):
 
-        if len(string) <= 140:
+        if len(string) <= MAX_TWEET_LENGTH:
             return string
         else:
             sentences = re.split("([!.?…])", string)
@@ -175,7 +178,7 @@ def create_tweet(starter_words, word_frequencies):
             result = ""
 
             for sentence in sentences:
-                if len(result + sentence) > 140:
+                if len(result + sentence) > MAX_TWEET_LENGTH:
                     return result
                 else:
                     result += sentence
@@ -186,7 +189,7 @@ def create_tweet(starter_words, word_frequencies):
 
     # Generate a Markov chain that is probably longer than what we can use (this will probably end early because the
     # chain will reach a dead-end though)
-    while len(tweet_string) < 400:
+    while len(tweet_string) < MAX_TWEET_LENGTH * 5:
         next_word = get_next_word(word_frequencies, tweet_chain[-NUMBER_OF_WORDS_USED:])
 
         if next_word is None:
@@ -195,9 +198,9 @@ def create_tweet(starter_words, word_frequencies):
             tweet_chain.append(next_word)
             tweet_string = chain_to_string(tweet_chain)
 
-    tweet_string = cut_to_140_chars(tweet_string)
+    tweet_string = cut_to_tweet_size(tweet_string)
 
-    # If there's no way to make the string under 140 chars, just try again
+    # If there's no way to make the string under MAX_TWEET_LENGTH chars, just try again
     if len(tweet_string) == 0:
         tweet_string = create_tweet(starter_words, word_frequencies)
 
@@ -241,6 +244,7 @@ def main():
 
     else:
         print("Not tweeting...")
+
 
 if __name__ == "__main__":
     main()
