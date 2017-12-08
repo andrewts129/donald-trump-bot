@@ -1,6 +1,6 @@
 # donald-trump-bot
-Twitter bot that uses The Donald's Twitter account  to create Markov chains that imitate him.
-
+Twitter bot that uses President Trump's Twitter account to create Markov chains that imitate him.  
+  
 The main script, DonaldTrumBot.py, is scheduled to run every ten minutes on Heroku. Most times it will exit without doing anything, but about ~2-3 times a day it will create a tweet and post it.
 
 The secondary script, WordBankCreator.py, sifts through Trump's tweets and comes up with the probabilities of certain words following other words and uploads the results to Google Drive for the main script to download and use. I run this script periodically by hand on my own machine.  
