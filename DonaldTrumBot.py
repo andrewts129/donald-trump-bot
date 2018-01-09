@@ -105,7 +105,12 @@ def create_tweet(starter_words, word_frequencies):
             out_string = out_string + item[0] + ' '
 
         # Lots of little minor adjustments that make the output text look a little more natural
-        out_string = out_string.replace(" ’", "’")
+
+        # Ensures that punctuation characters are consistent
+        out_string = out_string.replace("’", "'")
+        out_string = out_string.replace('“', '"')
+        out_string = out_string.replace('”', '"')
+
         out_string = out_string.replace(" !", "!")
         out_string = out_string.replace(" .", ".")
         out_string = out_string.replace(" ?", "?")
@@ -120,13 +125,12 @@ def create_tweet(starter_words, word_frequencies):
         out_string = out_string.replace(" :", ":")
         out_string = out_string.replace(" %", "%")
         out_string = out_string.replace('"', '')
-        out_string = out_string.replace('“', '')
-        out_string = out_string.replace('”', '')
         out_string = out_string.replace(" - ", "-")
         out_string = out_string.replace("   ", " ")
         out_string = out_string.replace("  ", " ")
         out_string = out_string.replace("&amp;", "&")
         out_string = out_string.replace("\n", "")
+        out_string = out_string.replace(" …", "…")
 
         # Removes parentheses if there aren't two of them
         if "(" not in out_string or ")" not in out_string:
