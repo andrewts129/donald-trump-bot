@@ -107,6 +107,7 @@ def create_tweet(starter_words, word_frequencies):
         # Lots of little minor adjustments that make the output text look a little more natural
 
         # Ensures that punctuation characters are consistent
+        # This needs to come before the next block because that one assumes that there's no fancy punctuation
         out_string = out_string.replace("’", "'")
         out_string = out_string.replace('“', '"')
         out_string = out_string.replace('”', '"')
@@ -124,7 +125,6 @@ def create_tweet(starter_words, word_frequencies):
         out_string = out_string.replace(" n'", "n'")
         out_string = out_string.replace(" :", ":")
         out_string = out_string.replace(" %", "%")
-        out_string = out_string.replace('"', '')
         out_string = out_string.replace(" - ", "-")
         out_string = out_string.replace("   ", " ")
         out_string = out_string.replace("  ", " ")
@@ -136,6 +136,11 @@ def create_tweet(starter_words, word_frequencies):
         if "(" not in out_string or ")" not in out_string:
             out_string = out_string.replace("(", "")
             out_string = out_string.replace(")", "")
+
+        # Remove quotes if there is an odd number as that means there is a mismatch (and I can't be bothered to figure
+        # out how to match them right now)
+        if out_string.count('"') % 2 is not 0:
+            out_string = out_string.replace('"', "")
 
         out_string = out_string.strip()
 
