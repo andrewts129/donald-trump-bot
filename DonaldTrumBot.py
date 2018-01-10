@@ -109,6 +109,7 @@ def create_tweet(starter_words, word_frequencies):
         # Ensures that punctuation characters are consistent
         # This needs to come before the next block because that one assumes that there's no fancy punctuation
         out_string = out_string.replace("’", "'")
+        out_string = out_string.replace("‘", "'")
         out_string = out_string.replace('“', '"')
         out_string = out_string.replace('”', '"')
 
@@ -126,11 +127,14 @@ def create_tweet(starter_words, word_frequencies):
         out_string = out_string.replace(" :", ":")
         out_string = out_string.replace(" %", "%")
         out_string = out_string.replace(" - ", "-")
-        out_string = out_string.replace("   ", " ")
-        out_string = out_string.replace("  ", " ")
         out_string = out_string.replace("&amp;", "&")
+        out_string = out_string.replace("& amp;", "&")
         out_string = out_string.replace("\n", "")
         out_string = out_string.replace(" …", "…")
+        out_string = out_string.replace("b / c", "b/c")
+        out_string = out_string.replace('"', "")
+        out_string = out_string.replace("   ", " ")
+        out_string = out_string.replace("  ", " ")
 
         # Removes parentheses if there aren't two of them
         if "(" not in out_string or ")" not in out_string:
