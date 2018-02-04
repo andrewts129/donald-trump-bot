@@ -2,8 +2,6 @@ import spacy
 import sqlite3
 import tweepy
 import pickle
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 import configparser
 import zipfile
 import tempfile
@@ -275,30 +273,6 @@ def get_speeches():
     return speeches
 
 
-def upload(word_freqs, starters):
-    """Uploaded the two files to my Google Drive as pickles"""
-
-    with open('wordbank.pkl', 'wb') as file:
-        pickle.dump(word_freqs, file)
-
-    with open('starters.pkl', 'wb') as file:
-        pickle.dump(starters, file)
-
-    google_auth = GoogleAuth()
-    google_auth.LocalWebserverAuth()
-    drive = GoogleDrive(google_auth)
-
-    for file in drive.ListFile().GetList():
-        print(file['title'])
-        if file['title'] == 'wordbank.pkl':
-            file.SetContentFile('wordbank.pkl')
-            file.Upload()
-
-        elif file['title'] == 'starters.pkl':
-            file.SetContentFile('starters.pkl')
-            file.Upload()
-
-
 def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
@@ -334,11 +308,15 @@ def main():
         speech_ngrams = get_ngrams(speech, nlp)
 
         # To keep things Twittery, do not use speeches as starter sequences
-
         for ngram in speech_ngrams:
             update_frequency(word_frequency_bank, ngram)
 
-    upload(word_frequency_bank, starter_words)
+    with open('wordbank.pkl', 'wb') as file:
+        pickle.dump(word_frequency_bank, file)
+
+    with open('starters.pkl', 'wb') as file:
+        pickle.dump(starter_words, file)
+
     print('done')
 
 

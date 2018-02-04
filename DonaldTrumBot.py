@@ -2,7 +2,6 @@ import random
 import tweepy
 from numpy.random import choice
 import pickle
-import requests
 import configparser
 import re
 import os
@@ -36,24 +35,23 @@ api = tweepy.API(auth)
 
 
 def get_starter_letters():
-    """Downloads a list of the start of Trump's tweets that will be used as the starting seed of the Markov chain"""
+    """Gets a list of the start of Trump's tweets that will be used as the starting seed of the Markov chain"""
 
-    url = "https://drive.google.com/uc?id=0B8xDokak7DY3S3p0RUppZUNRTWs"     # My Google Drive
-    starter_pickle = requests.get(url).content
-    print("Downloaded starter words...")
-    all_starters = pickle.loads(starter_pickle)
+    with open("starters.pkl", "rb") as starter_pickle:
+        all_starters = pickle.loads(starter_pickle)
 
+    print("Loaded starter words...")
     return all_starters
 
 
 def get_word_bank():
-    """Downloads the word bank containing all the words (and their part of speech), as well as the two words that
+    """Gets the word bank containing all the words (and their part of speech), as well as the two words that
     precede them"""
 
-    url = "https://drive.google.com/uc?id=0B8xDokak7DY3OGxuLVo5d1loZTA"     # My Google Drive
-    word_bank_pickle = requests.get(url).content
-    print("Downloaded word bank...")
-    word_bank = pickle.loads(word_bank_pickle)
+    with open("wordbank.pkl", "rb") as word_bank_pickle:
+        word_bank = pickle.loads(word_bank_pickle)
+
+    print("Loaded word bank...")
 
     return word_bank
 
@@ -89,7 +87,7 @@ def get_tweets_to_reply_to():
 
 def should_tweet_now():
     """Will return true enough so that the bot tweets AVG_TIMES_TO_TWEET_PER_DAY per day, so long as this script
-    is run every WAKE_UP_INTERVAL minutes"""
+    is run every WAKE_UP_INTERVAL minutes. If in Dev mode, will always return true for testing purposes"""
 
     if PROD:
         wakeups_per_day = (24 * 60) / WAKE_UP_INTERVAL
