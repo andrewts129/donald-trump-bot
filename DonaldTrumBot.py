@@ -23,6 +23,10 @@ AVG_TIMES_TO_TWEET_PER_DAY = 2.5
 # Max number of chars in a generated tweet. Should be <= Max number of chars allowed by Twitter
 MAX_TWEET_LENGTH = 200
 
+# True if running in production, false if in dev
+# Reads in the variable as a string, so this converts it to a boolean
+PROD = os.environ["PROD"] is True
+
 # Getting access to the Twitter API. Authentication data comes from environmental variables
 auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
                            consumer_secret=os.environ["TW_CONSUMER_SECRET"])
@@ -86,11 +90,15 @@ def get_tweets_to_reply_to():
 def should_tweet_now():
     """Will return true enough so that the bot tweets AVG_TIMES_TO_TWEET_PER_DAY per day, so long as this script
     is run every WAKE_UP_INTERVAL minutes"""
-    wakeups_per_day = (24 * 60) / WAKE_UP_INTERVAL
 
-    chance_to_tweet = AVG_TIMES_TO_TWEET_PER_DAY / wakeups_per_day
+    if PROD:
+        wakeups_per_day = (24 * 60) / WAKE_UP_INTERVAL
 
-    return chance_to_tweet > random.random()
+        chance_to_tweet = AVG_TIMES_TO_TWEET_PER_DAY / wakeups_per_day
+
+        return chance_to_tweet > random.random()
+    else:
+        return True
 
 
 def create_tweet(starter_words, word_frequencies):
@@ -230,11 +238,15 @@ def post_tweet(tweet_string, status_id_to_reply_to=None):
 
 def main():
 
+    if not PROD:
+        print("Running in dev mode - will not tweet anything")
+
     print("Waking up...")
 
     tweets_to_reply_to = get_tweets_to_reply_to()
     should_make_tweet_now = should_tweet_now()
 
+    # Always "tweets" in dev mode
     if len(tweets_to_reply_to) > 0 or should_make_tweet_now:
 
         # Gets the word data needed to build the tweets
@@ -245,15 +257,19 @@ def main():
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
             print("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
-            post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
-            api.create_favorite(reply.id)
+
+            if PROD:
+                post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
+                api.create_favorite(reply.id)
 
         if should_make_tweet_now:
             print("Going to tweet...")
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
             print("Tweeting: " + string_to_tweet)
-            post_tweet(string_to_tweet)
+
+            if PROD:
+                post_tweet(string_to_tweet)
 
     else:
         print("Not tweeting...")
