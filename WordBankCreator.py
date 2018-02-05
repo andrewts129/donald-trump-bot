@@ -9,6 +9,7 @@ import json
 import requests
 from io import BytesIO
 import os
+import en_core_web_sm
 
 # Getting settings that are shared between this script and the tweeting script
 shared_configs = configparser.ConfigParser()
@@ -276,7 +277,7 @@ def get_speeches():
 def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
-    nlp = spacy.load("en")
+    nlp = en_core_web_sm.load() 
 
     word_frequency_bank = {}
     starter_words = []
