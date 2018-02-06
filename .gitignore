@@ -6,4 +6,5 @@ __pycache__/
 venv/
 RunWordBankCreator.sh
 RunTestTweetCreation.sh
-RunBotDev
+RunBotDev.sh
+RunBotProd.sh
