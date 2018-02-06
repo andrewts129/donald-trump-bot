@@ -4,7 +4,7 @@ TestTweetCreation.py
 __pycache__/
 .idea/
 venv/
-RunWordBankCreator.sh
+RunWordBankCreatorDev.sh
 RunTestTweetCreation.sh
 RunBotDev.sh
 RunBotProd.sh
