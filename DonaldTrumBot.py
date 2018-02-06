@@ -2,16 +2,11 @@ import random
 import tweepy
 from numpy.random import choice
 import pickle
-import configparser
 import re
 import os
 
-# Getting settings that are shared between this script and the word bank building script
-shared_configs = configparser.ConfigParser()
-shared_configs.read("Config.ini")
-
 # The number of preceding words that will be used to pick the next word in the Markov chain
-NUMBER_OF_WORDS_USED = int(shared_configs["Configuration"]["NUMBER_OF_WORDS_USED"])
+NUMBER_OF_WORDS_USED = 2
 
 # Minutes between script runs
 WAKE_UP_INTERVAL = 10

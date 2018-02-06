@@ -2,7 +2,6 @@ import spacy
 import sqlite3
 import tweepy
 import pickle
-import configparser
 import zipfile
 import tempfile
 import json
@@ -10,13 +9,12 @@ import requests
 from io import BytesIO
 import os
 import en_core_web_sm
+import logging
 
-# Getting settings that are shared between this script and the tweeting script
-shared_configs = configparser.ConfigParser()
-shared_configs.read("Config.ini")
+logger = logging.getLogger(__name__)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
-NUMBER_OF_WORDS_USED = int(shared_configs["Configuration"]["NUMBER_OF_WORDS_USED"])
+NUMBER_OF_WORDS_USED = 2
 
 # The db file that contains all of Trump's tweets
 ARCHIVE_FILE_NAME = "TrumpTweets.db"
@@ -277,6 +275,7 @@ def get_speeches():
 def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
+    # For whatever reason, standard loading methods for spacy don't work on the RPI. This appears to work tho
     nlp = en_core_web_sm.load() 
 
     word_frequency_bank = {}
