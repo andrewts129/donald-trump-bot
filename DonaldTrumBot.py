@@ -6,7 +6,11 @@ import re
 import os
 import logging
 
-logger = logging.getLogger(__name__)
+# True if running in production, false if in dev
+# Reads in the variable as a string, so this converts it to a boolean
+PROD = os.environ["PROD"] is True
+
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
 NUMBER_OF_WORDS_USED = 2
@@ -19,10 +23,6 @@ AVG_TIMES_TO_TWEET_PER_DAY = 2.5
 
 # Max number of chars in a generated tweet. Should be <= Max number of chars allowed by Twitter
 MAX_TWEET_LENGTH = 200
-
-# True if running in production, false if in dev
-# Reads in the variable as a string, so this converts it to a boolean
-PROD = os.environ["PROD"] is True
 
 # Getting access to the Twitter API. Authentication data comes from environmental variables
 auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
@@ -38,7 +38,7 @@ def get_starter_letters():
     with open("starters.pkl", "rb") as starter_pickle:
         all_starters = pickle.load(starter_pickle)
 
-    logger.info("Loaded starter words...")
+    logging.info("Loaded starter words...")
     return all_starters
 
 
@@ -49,7 +49,7 @@ def get_word_bank():
     with open("wordbank.pkl", "rb") as word_bank_pickle:
         word_bank = pickle.load(word_bank_pickle)
 
-    logger.info("Loaded word bank...")
+    logging.info("Loaded word bank...")
 
     return word_bank
 
@@ -235,9 +235,9 @@ def post_tweet(tweet_string, status_id_to_reply_to=None):
 def main():
 
     if not PROD:
-        logger.info("Running in dev mode - will not tweet anything")
+        logging.info("Running in dev mode - will not tweet anything")
 
-    logger.info("Waking up...")
+    logging.info("Waking up...")
 
     tweets_to_reply_to = get_tweets_to_reply_to()
     should_make_tweet_now = should_tweet_now()
@@ -252,23 +252,23 @@ def main():
         for reply in tweets_to_reply_to:
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
-            logger.info("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
+            logging.info("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
 
             if PROD:
                 post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
                 api.create_favorite(reply.id)
 
         if should_make_tweet_now:
-            logger.info("Going to tweet...")
+            logging.info("Going to tweet...")
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
-            logger.info("Tweeting: " + string_to_tweet)
+            logging.info("Tweeting: " + string_to_tweet)
 
             if PROD:
                 post_tweet(string_to_tweet)
 
     else:
-        logger.info("Not tweeting...")
+        logging.info("Not tweeting...")
 
 
 if __name__ == "__main__":

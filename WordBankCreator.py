@@ -10,7 +10,14 @@ from io import BytesIO
 import os
 import logging
 
-logger = logging.getLogger(__name__)
+# True if running in production, false if in dev
+# Reads in the variable as a string, so this converts it to a boolean
+PROD = os.environ["PROD"] is True
+
+if PROD:
+    logging.basicConfig(filename="wordbankcreator.log", format='%(asctime)s %(message)s', level=logging.INFO)
+else:
+    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
 NUMBER_OF_WORDS_USED = 2
@@ -275,7 +282,7 @@ def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
     nlp = spacy.load("en")
-    logger.info("Spacy loaded")
+    logging.info("Spacy loaded")
 
     word_frequency_bank = {}
     starter_words = []
@@ -301,7 +308,7 @@ def main():
 
         num_tweets_parsed += 1
         if num_tweets_parsed % 500 is 0:
-            logger.info("Parsed " + str(num_tweets_parsed) + " tweets")
+            logging.info("Parsed " + str(num_tweets_parsed) + " tweets")
 
     speeches = get_speeches()
 
@@ -318,17 +325,17 @@ def main():
 
         num_speeches_parsed += 1
         if num_speeches_parsed % 500 is 0:
-            logger.info("Parsed " + str(num_speeches_parsed) + " speech paragraphs")
+            logging.info("Parsed " + str(num_speeches_parsed) + " speech paragraphs")
 
     with open('wordbank.pkl', 'wb') as file:
         pickle.dump(word_frequency_bank, file)
-        logger.info("Finished writing to workbank.pkl")
+        logging.info("Finished writing to workbank.pkl")
 
     with open('starters.pkl', 'wb') as file:
         pickle.dump(starter_words, file)
-        logger.info("Finished writing to starters.pkl")
+        logging.info("Finished writing to starters.pkl")
 
-    logger.info("Done")
+    logging.info("Done")
 
 
 if __name__ == "__main__":
