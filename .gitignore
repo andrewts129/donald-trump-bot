@@ -9,3 +9,4 @@ RunWordBankCreatorProd.sh
 RunTestTweetCreation.sh
 RunBotDev.sh
 RunBotProd.sh
+logs/

@@ -10,7 +10,10 @@ import logging
 # Reads in the variable as a string, so this converts it to a boolean
 PROD = os.environ["PROD"] == "True"
 
-logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+if PROD:
+    logging.basicConfig(filename="logs/donaldtrumbot.log", format='%(asctime)s %(message)s', level=logging.INFO)
+else:
+    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
 NUMBER_OF_WORDS_USED = 2

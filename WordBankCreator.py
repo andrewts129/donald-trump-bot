@@ -15,7 +15,7 @@ import logging
 PROD = os.environ["PROD"] == "True"
 
 if PROD:
-    logging.basicConfig(filename="wordbankcreator.log", format='%(asctime)s %(message)s', level=logging.INFO)
+    logging.basicConfig(filename="logs/wordbankcreator.log", format='%(asctime)s %(message)s', level=logging.INFO)
 else:
     logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
