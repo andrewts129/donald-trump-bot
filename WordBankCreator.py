@@ -276,13 +276,15 @@ def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
     # For whatever reason, standard loading methods for spacy don't work on the RPI. This appears to work tho
-    nlp = en_core_web_sm.load() 
+    nlp = en_core_web_sm.load()
+    logger.info("Spacy loaded")
 
     word_frequency_bank = {}
     starter_words = []
 
     tweets = get_tweets_as_strings(ARCHIVE_FILE_NAME)
 
+    num_tweets_parsed = 0
     for tweet in tweets:
         tweet_ngrams = get_ngrams(tweet, nlp)
 
@@ -299,8 +301,13 @@ def main():
         for ngram in tweet_ngrams:
             update_frequency(word_frequency_bank, ngram)
 
+        num_tweets_parsed += 1
+        if num_tweets_parsed % 500 is 0:
+            logger.info("Parsed " + str(num_tweets_parsed) + " tweets")
+
     speeches = get_speeches()
 
+    num_speeches_parsed = 0
     for speech in speeches:
         # Get rid of the newline char at the end of every line
         speech = speech.replace("\n", "\n")
@@ -311,13 +318,19 @@ def main():
         for ngram in speech_ngrams:
             update_frequency(word_frequency_bank, ngram)
 
+        num_speeches_parsed += 1
+        if num_speeches_parsed % 500 is 0:
+            logger.info("Parsed " + str(num_speeches_parsed) + " speech paragraphs")
+
     with open('wordbank.pkl', 'wb') as file:
         pickle.dump(word_frequency_bank, file)
+        logger.info("Finished writing to workbank.pkl")
 
     with open('starters.pkl', 'wb') as file:
         pickle.dump(starter_words, file)
+        logger.info("Finished writing to starters.pkl")
 
-    print('done')
+    logger.info("Done")
 
 
 if __name__ == "__main__":

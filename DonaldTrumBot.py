@@ -4,6 +4,9 @@ from numpy.random import choice
 import pickle
 import re
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
 NUMBER_OF_WORDS_USED = 2
@@ -35,7 +38,7 @@ def get_starter_letters():
     with open("starters.pkl", "rb") as starter_pickle:
         all_starters = pickle.loads(starter_pickle)
 
-    print("Loaded starter words...")
+    logger.info("Loaded starter words...")
     return all_starters
 
 
@@ -46,7 +49,7 @@ def get_word_bank():
     with open("wordbank.pkl", "rb") as word_bank_pickle:
         word_bank = pickle.loads(word_bank_pickle)
 
-    print("Loaded word bank...")
+    logger.info("Loaded word bank...")
 
     return word_bank
 
@@ -232,9 +235,9 @@ def post_tweet(tweet_string, status_id_to_reply_to=None):
 def main():
 
     if not PROD:
-        print("Running in dev mode - will not tweet anything")
+        logger.info("Running in dev mode - will not tweet anything")
 
-    print("Waking up...")
+    logger.info("Waking up...")
 
     tweets_to_reply_to = get_tweets_to_reply_to()
     should_make_tweet_now = should_tweet_now()
@@ -249,23 +252,23 @@ def main():
         for reply in tweets_to_reply_to:
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
-            print("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
+            logger.info("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
 
             if PROD:
                 post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
                 api.create_favorite(reply.id)
 
         if should_make_tweet_now:
-            print("Going to tweet...")
+            logger.info("Going to tweet...")
             string_to_tweet = create_tweet(tweet_starter_words, tweet_word_frequencies)
 
-            print("Tweeting: " + string_to_tweet)
+            logger.info("Tweeting: " + string_to_tweet)
 
             if PROD:
                 post_tweet(string_to_tweet)
 
     else:
-        print("Not tweeting...")
+        logger.info("Not tweeting...")
 
 
 if __name__ == "__main__":
