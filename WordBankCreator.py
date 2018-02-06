@@ -8,7 +8,6 @@ import json
 import requests
 from io import BytesIO
 import os
-import en_core_web_sm
 import logging
 
 logger = logging.getLogger(__name__)
@@ -275,8 +274,7 @@ def get_speeches():
 def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
-    # For whatever reason, standard loading methods for spacy don't work on the RPI. This appears to work tho
-    nlp = en_core_web_sm.load() 
+    nlp = spacy.load("en")
 
     word_frequency_bank = {}
     starter_words = []

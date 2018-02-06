@@ -33,7 +33,7 @@ def get_starter_letters():
     """Gets a list of the start of Trump's tweets that will be used as the starting seed of the Markov chain"""
 
     with open("starters.pkl", "rb") as starter_pickle:
-        all_starters = pickle.loads(starter_pickle)
+        all_starters = pickle.load(starter_pickle)
 
     print("Loaded starter words...")
     return all_starters
@@ -44,7 +44,7 @@ def get_word_bank():
     precede them"""
 
     with open("wordbank.pkl", "rb") as word_bank_pickle:
-        word_bank = pickle.loads(word_bank_pickle)
+        word_bank = pickle.load(word_bank_pickle)
 
     print("Loaded word bank...")
 
