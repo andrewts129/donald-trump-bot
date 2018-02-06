@@ -12,7 +12,7 @@ import logging
 
 # True if running in production, false if in dev
 # Reads in the variable as a string, so this converts it to a boolean
-PROD = os.environ["PROD"] is True
+PROD = os.environ["PROD"] == "True"
 
 if PROD:
     logging.basicConfig(filename="wordbankcreator.log", format='%(asctime)s %(message)s', level=logging.INFO)
