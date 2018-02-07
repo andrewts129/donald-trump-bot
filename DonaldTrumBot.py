@@ -247,6 +247,7 @@ def main():
 
     # Always "tweets" in dev mode
     if len(tweets_to_reply_to) > 0 or should_make_tweet_now:
+        logging.info("Going to do something...")
 
         # Gets the word data needed to build the tweets
         tweet_starter_words = get_starter_letters()
