@@ -10,3 +10,6 @@ RunTestTweetCreation.sh
 RunBotDev.sh
 RunBotProd.sh
 logs/
+starters.pkl
+wordbank.pkl
+TrumpTweets.db
