@@ -46,7 +46,7 @@ def create_tweet_database():
     should_use_tweet()) are made"""
 
     data_to_write = []
-    years_to_use = list(range(2013, 2018))
+    years_to_use = list(range(2013, 2019))
 
     with tempfile.TemporaryDirectory() as temp_dir:
         for year in years_to_use:
