@@ -246,8 +246,7 @@ def main():
     try:
         tweets_to_reply_to = get_tweets_to_reply_to()
     except Exception as e:
-        logging.error(str(e))
-        logging.error(e.__traceback__)
+        logging.error(e)
 
     should_make_tweet_now = should_tweet_now()
 
@@ -269,8 +268,7 @@ def main():
                     post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
                     api.create_favorite(reply.id)
                 except Exception as e:
-                    logging.error(str(e))
-                    logging.error(e.__traceback__)
+                    logging.error(e)
 
         if should_make_tweet_now:
             logging.info("Going to tweet...")
@@ -282,8 +280,7 @@ def main():
                 try:
                     post_tweet(string_to_tweet)
                 except Exception as e:
-                    logging.error(str(e))
-                    logging.error(e.__traceback__)
+                    logging.error(e)
 
     else:
         logging.info("Not tweeting...")
