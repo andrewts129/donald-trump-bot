@@ -242,7 +242,13 @@ def main():
 
     logging.info("Waking up...")
 
-    tweets_to_reply_to = get_tweets_to_reply_to()
+    tweets_to_reply_to = []
+    try:
+        tweets_to_reply_to = get_tweets_to_reply_to()
+    except Exception as e:
+        logging.error(str(e))
+        logging.error(e.__traceback__)
+
     should_make_tweet_now = should_tweet_now()
 
     # Always "tweets" in dev mode
@@ -259,8 +265,12 @@ def main():
             logging.info("Replying to Tweet " + str(reply.id) + " with: " + string_to_tweet)
 
             if PROD:
-                post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
-                api.create_favorite(reply.id)
+                try:
+                    post_tweet(string_to_tweet, status_id_to_reply_to=reply.id)
+                    api.create_favorite(reply.id)
+                except Exception as e:
+                    logging.error(str(e))
+                    logging.error(e.__traceback__)
 
         if should_make_tweet_now:
             logging.info("Going to tweet...")
@@ -269,7 +279,11 @@ def main():
             logging.info("Tweeting: " + string_to_tweet)
 
             if PROD:
-                post_tweet(string_to_tweet)
+                try:
+                    post_tweet(string_to_tweet)
+                except Exception as e:
+                    logging.error(str(e))
+                    logging.error(e.__traceback__)
 
     else:
         logging.info("Not tweeting...")
