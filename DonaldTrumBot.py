@@ -6,6 +6,7 @@ import re
 import os
 import logging
 
+# TEST
 # True if running in production, false if in dev
 # Reads in the variable as a string, so this converts it to a boolean
 PROD = os.environ["PROD"] == "True"
