@@ -198,6 +198,9 @@ def get_tweets_as_strings(archive_file_path):
         tweet_text = tweet[0]
         tweet_time = tweet[1]
 
+        # Some tweets have erratic newlines in them that mess with tweet generation down the line
+        tweet_text = tweet_text.replace("\n", " ")
+
         list_of_tweets.append(tweet_text)
 
         if any((str(x) in tweet_time) for x in weighted_years):
@@ -315,7 +318,7 @@ def main():
     num_speeches_parsed = 0
     for speech in speeches:
         # Get rid of the newline char at the end of every line
-        speech = speech.replace("\n", "\n")
+        speech = speech.replace("\n", "")
 
         speech_ngrams = get_ngrams(speech, nlp)
 
@@ -327,11 +330,11 @@ def main():
         if num_speeches_parsed % 500 is 0:
             logging.info("Parsed " + str(num_speeches_parsed) + " speech paragraphs")
 
-    with open('wordbank.pkl', 'wb') as file:
+    with open("wordbank.pkl", "wb") as file:
         pickle.dump(word_frequency_bank, file)
         logging.info("Finished writing to workbank.pkl")
 
-    with open('starters.pkl', 'wb') as file:
+    with open("starters.pkl", "wb") as file:
         pickle.dump(starter_words, file)
         logging.info("Finished writing to starters.pkl")
 
