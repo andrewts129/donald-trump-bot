@@ -190,7 +190,7 @@ def get_tweets_as_strings(archive_file_path):
     # The list of strings
     list_of_tweets = []
 
-    # Tweets from these years will be added to the list twice so that the markov chain tweets resemble modern Trump
+    # Tweets from these years will be added to the list thrice so that the markov chain tweets resemble modern Trump
     # more
     weighted_years = list(range(2016, 2021))
 
@@ -204,6 +204,7 @@ def get_tweets_as_strings(archive_file_path):
         list_of_tweets.append(tweet_text)
 
         if any((str(x) in tweet_time) for x in weighted_years):
+            list_of_tweets.append(tweet_text)
             list_of_tweets.append(tweet_text)
 
     return list_of_tweets
