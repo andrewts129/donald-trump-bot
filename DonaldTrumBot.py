@@ -163,13 +163,7 @@ def create_tweet(starter_words, word_frequencies):
 
         total_sum = sum(numbers)
 
-        output = []
-
-        for number in numbers:
-            p = float(number) / total_sum
-            output.append(p)
-
-        return output
+        return [float(number) / total_sum for number in numbers]
 
     def get_next_word(word_freqs, last_n_tuples):
 
