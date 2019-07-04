@@ -10,10 +10,7 @@ import logging
 # Reads in the variable as a string, so this converts it to a boolean
 PROD = os.environ["PROD"] == "True"
 
-if PROD:
-    logging.basicConfig(filename="logs/donaldtrumbot.log", format='%(asctime)s %(message)s', level=logging.INFO)
-else:
-    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 # The number of preceding words that will be used to pick the next word in the Markov chain
 NUMBER_OF_WORDS_USED = 2
@@ -38,7 +35,7 @@ api = tweepy.API(auth)
 def get_starter_letters():
     """Gets a list of the start of Trump's tweets that will be used as the starting seed of the Markov chain"""
 
-    with open("starters.pkl", "rb") as starter_pickle:
+    with open(os.environ["STARTERS_URL"], "rb") as starter_pickle:
         all_starters = pickle.load(starter_pickle)
 
     logging.info("Loaded starter words...")
@@ -49,7 +46,7 @@ def get_word_bank():
     """Gets the word bank containing all the words (and their part of speech), as well as the two words that
     precede them"""
 
-    with open("wordbank.pkl", "rb") as word_bank_pickle:
+    with open(os.environ["WORD_BANK_URL"], "rb") as word_bank_pickle:
         word_bank = pickle.load(word_bank_pickle)
 
     logging.info("Loaded word bank...")
