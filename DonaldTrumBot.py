@@ -5,6 +5,7 @@ import pickle
 import re
 import os
 import logging
+import requests
 
 # True if running in production, false if in dev
 # Reads in the variable as a string, so this converts it to a boolean
@@ -35,8 +36,7 @@ api = tweepy.API(auth)
 def get_starter_letters():
     """Gets a list of the start of Trump's tweets that will be used as the starting seed of the Markov chain"""
 
-    with open(os.environ["STARTERS_URL"], "rb") as starter_pickle:
-        all_starters = pickle.load(starter_pickle)
+    all_starters = pickle.loads(requests.get(os.environ["STARTERS_URL"]).content)
 
     logging.info("Loaded starter words...")
     return all_starters
@@ -46,8 +46,7 @@ def get_word_bank():
     """Gets the word bank containing all the words (and their part of speech), as well as the two words that
     precede them"""
 
-    with open(os.environ["WORD_BANK_URL"], "rb") as word_bank_pickle:
-        word_bank = pickle.load(word_bank_pickle)
+    word_bank = pickle.loads(requests.get(os.environ["WORD_BANK_URL"]).content)
 
     logging.info("Loaded word bank...")
 
