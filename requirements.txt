@@ -1,19 +1,24 @@
-# This file may be used to create an environment using:
-# $ conda create --name <env> --file <this file>
-# platform: linux-armv7l
-ca-certificates=2017.7.27.1=0
-certifi=2018.1.18=py36h85a5227_0
-libgfortran=3.0.0=0
-ncurses=5.9=0
-numpy=1.14.0=py36h73aad69_0
-openblas=0.2.19=0
-openssl=1.0.2l=0
-pip=9.0.1=py36_0
-python=3.6.3=hea4cac4_0
-readline=6.3=0
-setuptools=38.4.0=py36hd934b87_0
-sqlite=3.15.0=0
-tk=8.6.6=0
-wheel=0.30.0=py36h76583d5_0
-xz=5.2.2=0
-zlib=1.2.11=0
+attrs==19.1.0
+blis==0.2.4
+certifi==2019.6.16
+chardet==3.0.4
+cymem==2.0.2
+idna==2.8
+jsonschema==3.0.1
+murmurhash==1.0.2
+numpy==1.16.4
+oauthlib==3.0.2
+plac==0.9.6
+preshed==2.0.1
+pyrsistent==0.15.2
+PySocks==1.7.0
+requests==2.22.0
+requests-oauthlib==1.2.0
+six==1.12.0
+spacy==2.1.4
+srsly==0.0.7
+thinc==7.0.4
+tqdm==4.32.2
+tweepy==3.7.0
+urllib3==1.25.3
+wasabi==0.2.2
