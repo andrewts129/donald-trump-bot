@@ -285,7 +285,7 @@ def get_speeches():
 def main():
     update_tweet_archive(ARCHIVE_FILE_NAME)
 
-    nlp = spacy.load("en")
+    nlp = spacy.load("en_core_web_sm")
     logging.info("Spacy loaded")
 
     word_frequency_bank = {}
