@@ -71,8 +71,7 @@ class Model:
         self._seeds = [Model._to_bigrams(tweet)[0] for tweet in tokenized_tweets if len(tweet) > 2]
 
         trigrammed_tweets = (Model._to_trigrams(tweet) for tweet in tokenized_tweets)
-
-        for trigram in itertools.chain(*trigrammed_tweets):
+        for trigram in itertools.chain(*trigrammed_tweets):  # Flattens the nested lists
             self._weights.add(trigram)
 
     def get_seed(self) -> List[Token]:
@@ -112,13 +111,13 @@ class Model:
     def _to_trigrams(tokens: Iterable[Token]) -> List[_Trigram]:
         return [_Trigram(*gram) for gram in nltk.ngrams(tokens, 3)]
 
-    def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> Iterable[List[Token]]:
+    def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
         tweets_to_use = (tweet for tweet in tweets if Model._should_use_tweet(tweet))
         tokenized_tweets = (self._tokenizer.tokenize(tweet.text) for tweet in tweets_to_use)
         pos_tagged_tokenized_tweets = (nltk.pos_tag(tokenized_tweet) for tokenized_tweet in tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
-        return ([Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets)
+        return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
 
     @staticmethod
     def _should_use_tweet(tweet: Tweet) -> bool:
