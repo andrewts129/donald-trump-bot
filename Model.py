@@ -100,10 +100,6 @@ class Model:
         return chain
 
     @staticmethod
-    def join_tokens(tokens: Iterable[Token]) -> str:
-        return ' '.join(token.word for token in tokens)
-
-    @staticmethod
     def _to_bigrams(tokens: Iterable[Token]) -> List[_Bigram]:
         return [_Bigram(*gram) for gram in nltk.ngrams(tokens, 2)]
 
@@ -112,13 +108,8 @@ class Model:
         return [_Trigram(*gram) for gram in nltk.ngrams(tokens, 3)]
 
     def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
-        tweets_to_use = (tweet for tweet in tweets if Model._should_use_tweet(tweet))
-        tokenized_tweets = (self._tokenizer.tokenize(tweet.text) for tweet in tweets_to_use)
+        tokenized_tweets = (self._tokenizer.tokenize(tweet.text) for tweet in tweets)
         pos_tagged_tokenized_tweets = (nltk.pos_tag(tokenized_tweet) for tokenized_tweet in tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
-
-    @staticmethod
-    def _should_use_tweet(tweet: Tweet) -> bool:
-        return not tweet.is_retweet  # TODO more conditions

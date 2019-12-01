@@ -2,9 +2,9 @@
 import ndjson
 import sys
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Iterable
 
-from Model import Model, Tweet
+from Model import Model, Tweet, Token
 
 
 def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
@@ -17,6 +17,14 @@ def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
     )
 
 
+def should_use_tweet(tweet: Tweet) -> bool:
+    return not tweet.is_retweet  # TODO more conditions
+
+
+def join_tokens(tokens: Iterable[Token]) -> str:
+    return ' '.join(token.word for token in tokens)  # TODO more sophisticated
+
+
 if __name__ == '__main__':
     with open('data/trump_tweets.ndjson', 'r') as f:
         raw_tweets = ndjson.load(f)
@@ -25,7 +33,7 @@ if __name__ == '__main__':
     model = Model(tweets)
 
     chain = model.generate_tokens(100)
-    print(model.join_tokens(chain))
+    print(join_tokens(chain))
 
     print('done!')
     sys.exit(0)
