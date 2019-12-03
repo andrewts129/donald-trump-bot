@@ -79,6 +79,7 @@ class Model:
         return [random_bigram.first, random_bigram.second]
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
+        # TODO try using a beta distribution here to give more weight towards more common patterns
         last_bigram = _Bigram(tokens[-2], tokens[-1])
 
         successors = self._weights.get_successor_probabilities(last_bigram)
