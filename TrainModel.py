@@ -27,7 +27,7 @@ def join_tokens(tokens: Iterable[Token]) -> str:
         ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'),
         ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
         ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
-        (" ' s", "'s"), (" ' v", "'v"), ("' 0", "'0")
+        (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0")
     ]
     for replacement_pair in replacements:
         output = output.replace(*replacement_pair)
