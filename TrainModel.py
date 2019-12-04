@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import re
 import sys
 from datetime import datetime
 from typing import Dict, Iterable

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO: After finding trumptwitterarchive.com's API, this is now mostly redundant. Remove?
 import os
 import sys
 from datetime import datetime
