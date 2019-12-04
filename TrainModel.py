@@ -20,7 +20,16 @@ def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
 
 
 def join_tokens(tokens: Iterable[Token]) -> str:
-    return ' '.join(token.word for token in tokens)  # TODO more sophisticated
+    output = ' '.join(token.word for token in tokens)
+
+    replacements = {
+        (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), ('... ', '...'), (' ’ ', '’'), ('. @', '.@'), ('" ', '"'),
+        (' "', '"'), ('( ', '('), (' )', ')'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.')
+    }
+    for replacement_pair in replacements:
+        output = output.replace(*replacement_pair)
+
+    return output.strip()
 
 
 if __name__ == '__main__':
@@ -32,8 +41,10 @@ if __name__ == '__main__':
 
     model = Model(tweets)
 
-    chain = model.generate_tokens(100)
-    print(join_tokens(chain))
+    for i in range(0, 10):
+        chain = model.generate_tokens(100)
+        print(chain)
+        print(join_tokens(chain))
+        print()
 
-    print('done!')
     sys.exit(0)
