@@ -1,4 +1,5 @@
 import itertools
+import multiprocessing as mp
 import random
 from collections import defaultdict
 from datetime import datetime
@@ -109,8 +110,11 @@ class Model:
         return [_Trigram(*gram) for gram in nltk.ngrams(tokens, 3)]
 
     def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
-        tokenized_tweets = (self._tokenizer.tokenize(tweet.text) for tweet in tweets)
-        pos_tagged_tokenized_tweets = (nltk.pos_tag(tokenized_tweet) for tokenized_tweet in tokenized_tweets)
+        tweet_texts = (tweet.text for tweet in tweets)
+
+        with mp.Pool() as pool:
+            tokenized_tweets = pool.map(self._tokenizer.tokenize, tweet_texts)
+            pos_tagged_tokenized_tweets = pool.map(nltk.pos_tag, tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
