@@ -19,7 +19,7 @@ def not_from_trump_device(tweet: Tweet) -> bool:
 
 def is_quote(tweet: Tweet) -> bool:
     bad_starts = ('"@', 'Via @')
-    commonly_quoted = {'Albert Einstein', 'Aristotle'}
+    commonly_quoted = {'Albert Einstein', 'Aristotle', 'Benjamin Franklin'}
     return tweet.text.startswith(bad_starts) or any((person in tweet.text) for person in commonly_quoted) \
         or (re.match(r'^[“|\"].*[”|\"]\s*[–|\-].*$', tweet.text) is not None)
 

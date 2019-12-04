@@ -7,6 +7,7 @@ from typing import List, NamedTuple, Iterable, Dict, Optional
 
 import nltk
 from nltk.tokenize.casual import TweetTokenizer
+from numpy.random import beta
 
 
 class Tweet(NamedTuple):
@@ -80,13 +81,19 @@ class Model:
         return [random_bigram.first, random_bigram.second]
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        # TODO try using a beta distribution here to give more weight towards more common patterns
         last_bigram = _Bigram(tokens[-2], tokens[-1])
 
         successors = self._weights.get_successor_probabilities(last_bigram)
+        successors = list(sorted(successors, key=lambda sp: sp.probability))
+
         if len(successors) > 0:
-            successor_tokens, weights = zip(*successors)
-            return random.choices(successor_tokens, weights, k=1)[0]
+            successor_tokens, probabilities = zip(*successors)
+            cumulative_probabilities = [prob + sum(probabilities[:i]) for i, prob in enumerate(probabilities)]
+
+            random_num = beta(3, 1)  # Skews towards higher numbers. Increases bias towards common patterns
+            chosen_index = next(i for i, prob in enumerate(cumulative_probabilities) if random_num <= prob)
+
+            return successor_tokens[chosen_index]
         else:
             return None
 
