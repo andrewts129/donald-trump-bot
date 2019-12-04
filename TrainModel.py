@@ -12,7 +12,7 @@ from TweetValidator import should_use_tweet
 
 def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
     return Tweet(
-        id=int(raw_tweet['id']),
+        id=int(raw_tweet['id_str']),
         text=raw_tweet['text'],
         source=raw_tweet['source'],
         created_at=datetime.strptime(raw_tweet['created_at'], '%a %b %d %H:%M:%S %z %Y'),
