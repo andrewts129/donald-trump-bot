@@ -22,13 +22,16 @@ def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
 def join_tokens(tokens: Iterable[Token]) -> str:
     output = ' '.join(token.word for token in tokens)
 
-    replacements = {
-        (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), ('... ', '...'), (' ’ ', '’'), ('. @', '.@'), ('" ', '"'),
-        (' "', '"'), ('( ', '('), (' )', ')'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.')
-    }
+    replacements = [
+        (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), (' :', ':'), (' ;', ';'), ('... ', '...'), (' …', '…'),
+        (' ’ ', '’'), ('. @', '.@'), ('( ', '('), (' )', ')'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'),
+        ('D. C.', 'D.C.'), ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'),
+        ('MS - 13', 'MS-13'), ('# ', '#'), ('w /', 'w/'), ('b / c', 'b/c')
+    ]
     for replacement_pair in replacements:
         output = output.replace(*replacement_pair)
 
+    # TODO do something about unmatched parenthesis/quotes
     return output.strip()
 
 
@@ -43,7 +46,6 @@ if __name__ == '__main__':
 
     for i in range(0, 10):
         chain = model.generate_tokens(100)
-        print(chain)
         print(join_tokens(chain))
         print()
 
