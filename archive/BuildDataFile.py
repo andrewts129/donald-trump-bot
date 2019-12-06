@@ -31,8 +31,7 @@ def main():
     urls_to_query = (f'http://trumptwitterarchive.com/data/realdonaldtrump/{year}.json' for year in range(2009, 2020))
     responses = [requests.get(url).json() for url in urls_to_query]
 
-    responses_flat = flatten(responses)
-    tweets = [parse_raw_tweet(response) for response in responses_flat]
+    tweets = [parse_raw_tweet(response) for response in flatten(responses)]
     tweets = list(sorted(tweets, key=lambda tw: tw.id))
     tweet_dicts = [tweet._asdict() for tweet in tweets]  # For json serialization
 
