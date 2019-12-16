@@ -4,7 +4,7 @@ import sys
 from typing import Iterable
 from timeit import default_timer as timer
 
-from BuildDataFile import dump_all_tweets
+from TweetDownloader import dump_all_tweets
 from Model import train_model_from_file
 from namedtuples.Token import Token
 
