@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from random import random
 from typing import Set
 
@@ -10,8 +11,12 @@ def _get_liked_tweet_ids(api: API) -> Set[int]:
 
 
 def _get_mentions_tweet_ids(api: API) -> Set[int]:
-    mentions = (tweet for tweet in tweepy.Cursor(api.mentions_timeline).items())
-    return set(mention.id for mention in mentions if not hasattr(mention, 'retweeted_status'))
+    mentions = (tweet for tweet in tweepy.Cursor(api.mentions_timeline).items() if not hasattr(tweet, 'retweeted_status'))
+
+    one_day_ago = datetime.today() - timedelta(days=1)
+    recent_mentions = (tweet for tweet in mentions if tweet.created_at > one_day_ago)
+
+    return set(mention.id for mention in recent_mentions)
 
 
 def should_tweet_now(min_between_wakeups: float, target_avg_tweets_per_day: float) -> bool:
@@ -25,14 +30,13 @@ def post_tweet(api: API, tweet: str) -> None:
 
 
 def post_reply_tweet(api: API, tweet: str, status_id_to_reply_to: int) -> None:
+    api.create_favorite(status_id_to_reply_to)  # To prevent from replying twice. Also just kinda funny
+
     user_to_reply_to = api.get_status(status_id_to_reply_to).author.screen_name
-    # TODO do I need the string interpolation?
     api.update_status(f'@{user_to_reply_to} {tweet}', status_id_to_reply_to, auto_populate_reply_metadata=True)
 
 
 def get_tweet_ids_to_reply_to(api: API) -> Set[int]:
-    # TODO this is broken
-    # liked_tweet_ids = _get_liked_tweet_ids(api)
-    # mentioned_tweet_ids = _get_mentions_tweet_ids(api)
-    # return mentioned_tweet_ids - liked_tweet_ids
-    return set()
+    liked_tweet_ids = _get_liked_tweet_ids(api)
+    mentioned_tweet_ids = _get_mentions_tweet_ids(api)
+    return mentioned_tweet_ids - liked_tweet_ids

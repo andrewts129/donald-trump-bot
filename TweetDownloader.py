@@ -5,6 +5,8 @@ from typing import NamedTuple, Dict, List
 import ndjson
 import requests
 
+from namedtuples.Tweet import tweet_string_to_datetime
+
 
 class _Tweet(NamedTuple):
     # This is slightly different than the 'Tweet' namedtuple used elsewhere for ease of json serialization
@@ -85,7 +87,7 @@ def add_new_tweets_to_dump(output_file: str) -> None:
     existing_tweet_ids = set(tweet.id for tweet in existing_tweets)
 
     if len(existing_tweets) > 0:
-        newest_tweet_year = datetime.strptime(existing_tweets[-1].created_at, '%a %b %d %H:%M:%S %z %Y').year
+        newest_tweet_year = tweet_string_to_datetime(existing_tweets[-1].created_at).year
     else:
         newest_tweet_year = 2009
 

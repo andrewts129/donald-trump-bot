@@ -2,7 +2,6 @@
 import os
 import pickle
 import sys
-from typing import Iterable
 from timeit import default_timer as timer
 
 import tweepy

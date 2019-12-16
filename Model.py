@@ -2,7 +2,6 @@ import itertools
 import multiprocessing as mp
 import random
 from collections import defaultdict
-from datetime import datetime
 from functools import partial
 from typing import List, NamedTuple, Iterable, Dict, Optional
 
@@ -13,7 +12,7 @@ from numpy.random import beta
 
 from TweetValidator import should_use_tweet
 from namedtuples.Token import Token
-from namedtuples.Tweet import Tweet
+from namedtuples.Tweet import Tweet, tweet_string_to_datetime
 
 
 class _Bigram(NamedTuple):
@@ -127,7 +126,7 @@ def train_model_from_file(tweets_ndjson_filename: str) -> Model:
             id=int(raw_tweet['id']),
             text=raw_tweet['text'],
             source=raw_tweet['source'],
-            created_at=datetime.strptime(raw_tweet['created_at'], '%a %b %d %H:%M:%S %z %Y'),
+            created_at=tweet_string_to_datetime(raw_tweet['created_at']),
             is_retweet=raw_tweet['is_retweet']
         )
 
