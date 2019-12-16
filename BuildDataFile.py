@@ -6,6 +6,7 @@ import requests
 
 
 class Tweet(NamedTuple):
+    # This is slightly different than the 'Tweet' namedtuple used elsewhere for ease of json serialization
     id: int
     text: str
     source: str

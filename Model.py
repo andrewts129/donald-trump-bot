@@ -6,22 +6,14 @@ from datetime import datetime
 from functools import partial
 from typing import List, NamedTuple, Iterable, Dict, Optional
 
+import ndjson
 import nltk
 from nltk.tokenize.casual import TweetTokenizer
 from numpy.random import beta
 
-
-class Tweet(NamedTuple):
-    id: int
-    text: str
-    source: str
-    created_at: datetime
-    is_retweet: bool
-
-
-class Token(NamedTuple):
-    word: str
-    pos: str
+from TweetValidator import should_use_tweet
+from namedtuples.Token import Token
+from namedtuples.Tweet import Tweet
 
 
 class _Bigram(NamedTuple):
@@ -127,3 +119,23 @@ class Model:
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
+
+
+def train_model_from_file(tweets_ndjson_filename: str) -> Model:
+    def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
+        return Tweet(
+            id=int(raw_tweet['id']),
+            text=raw_tweet['text'],
+            source=raw_tweet['source'],
+            created_at=datetime.strptime(raw_tweet['created_at'], '%a %b %d %H:%M:%S %z %Y'),
+            is_retweet=raw_tweet['is_retweet']
+        )
+
+    with open(tweets_ndjson_filename, 'r') as f:
+        raw_tweets = ndjson.load(f)
+
+    tweets = (parse_raw_tweet(tweet) for tweet in raw_tweets)
+    tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
+
+    model = Model(tweets)
+    return model

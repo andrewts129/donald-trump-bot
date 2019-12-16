@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from Model import Tweet
+from namedtuples.Tweet import Tweet
 
 
 def is_retweet(tweet: Tweet) -> bool:
