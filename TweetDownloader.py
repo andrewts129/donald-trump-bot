@@ -6,7 +6,7 @@ import ndjson
 import requests
 
 
-class Tweet(NamedTuple):
+class _Tweet(NamedTuple):
     # This is slightly different than the 'Tweet' namedtuple used elsewhere for ease of json serialization
     id: int
     text: str
@@ -15,8 +15,8 @@ class Tweet(NamedTuple):
     is_retweet: bool
 
 
-def parse_raw_tweet_from_trumptwitterarchive(tweet: Dict) -> Tweet:
-    return Tweet(
+def _parse_raw_tweet_from_trumptwitterarchive(tweet: Dict) -> _Tweet:
+    return _Tweet(
         int(tweet['id_str']),
         tweet['text'],
         tweet['source'],
@@ -25,8 +25,8 @@ def parse_raw_tweet_from_trumptwitterarchive(tweet: Dict) -> Tweet:
     )
 
 
-def parse_raw_tweet_from_us(tweet: Dict) -> Tweet:
-    return Tweet(
+def _parse_raw_tweet_from_us(tweet: Dict) -> _Tweet:
+    return _Tweet(
         int(tweet['id']),
         tweet['text'],
         tweet['source'],
@@ -35,27 +35,27 @@ def parse_raw_tweet_from_us(tweet: Dict) -> Tweet:
     )
 
 
-def flatten(super_list: List[List]) -> List:
+def _flatten(super_list: List[List]) -> List:
     return list(itertools.chain(*super_list))
 
 
-def get_tweets_by_year(year: int) -> List[Tweet]:
+def _get_tweets_by_year(year: int) -> List[_Tweet]:
     url = f'http://trumptwitterarchive.com/data/realdonaldtrump/{year}.json'
     response = requests.get(url)
 
     if response.text.startswith('<!DOCTYPE html>'):
         return []
     else:
-        tweets = (parse_raw_tweet_from_trumptwitterarchive(raw_tweet) for raw_tweet in response.json())
+        tweets = (_parse_raw_tweet_from_trumptwitterarchive(raw_tweet) for raw_tweet in response.json())
         return list(sorted(tweets, key=lambda tw: tw.id))
 
 
-def get_all_tweets_after_year(year: int):
+def _get_all_tweets_after_year(year: int):
     # 'after' is inclusive
     all_tweets = []
 
     while True:
-        tweets = get_tweets_by_year(year)
+        tweets = _get_tweets_by_year(year)
         if len(tweets) > 0:
             all_tweets.extend(tweets)
             year += 1
@@ -65,12 +65,12 @@ def get_all_tweets_after_year(year: int):
     return list(sorted(all_tweets, key=lambda tw: tw.id))
 
 
-def get_all_tweets() -> List[Tweet]:
-    return get_all_tweets_after_year(2009)
+def _get_all_tweets() -> List[_Tweet]:
+    return _get_all_tweets_after_year(2009)
 
 
 def full_dump(output_file: str) -> None:
-    tweets = get_all_tweets()
+    tweets = _get_all_tweets()
     tweet_dicts = [tweet._asdict() for tweet in tweets]  # For json serialization
 
     with open(output_file, 'w') as f:
@@ -82,7 +82,7 @@ def add_new_tweets_to_dump(output_file: str) -> None:
     with open(output_file, 'r') as f:
         existing_raw_tweets = ndjson.load(f)
 
-    existing_tweets = [parse_raw_tweet_from_us(tweet) for tweet in existing_raw_tweets]
+    existing_tweets = [_parse_raw_tweet_from_us(tweet) for tweet in existing_raw_tweets]
     existing_tweet_ids = set(tweet.id for tweet in existing_tweets)
 
     if len(existing_tweets) > 0:
@@ -90,7 +90,7 @@ def add_new_tweets_to_dump(output_file: str) -> None:
     else:
         newest_tweet_year = 2009
 
-    maybe_new_tweets = get_all_tweets_after_year(newest_tweet_year)
+    maybe_new_tweets = _get_all_tweets_after_year(newest_tweet_year)
     new_tweets = (tweet for tweet in maybe_new_tweets if tweet.id not in existing_tweet_ids)
 
     all_tweets = itertools.chain(existing_tweets, new_tweets)
