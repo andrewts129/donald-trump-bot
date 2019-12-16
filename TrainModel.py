@@ -20,6 +20,7 @@ def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
 
 
 def join_tokens(tokens: Iterable[Token]) -> str:
+    # TODO put this somewhere else
     output = ' '.join(token.word for token in tokens)
 
     replacements = [

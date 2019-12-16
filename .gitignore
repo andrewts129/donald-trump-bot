@@ -2,5 +2,5 @@ venv/
 __pycache__/
 .idea/
 data/old/
-archive/.env
+.env
 model.pkl

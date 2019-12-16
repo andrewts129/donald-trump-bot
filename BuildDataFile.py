@@ -35,7 +35,7 @@ def main():
     tweets = list(sorted(tweets, key=lambda tw: tw.id))
     tweet_dicts = [tweet._asdict() for tweet in tweets]  # For json serialization
 
-    print(len(tweets))
+    print(f'Retrieved {len(tweets)} tweets...')
 
     output_file = '../data/trump_tweets.ndjson'
     with open(output_file, 'w') as f:
