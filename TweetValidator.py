@@ -10,6 +10,7 @@ def is_retweet(tweet: Tweet) -> bool:
 
 def not_from_trump_device(tweet: Tweet) -> bool:
     if tweet.source in {'Twitter for Android', 'Twitter Web Client'}:
+        # TODO a lot of tweets from the web client shouldn't be used
         return False
     elif tweet.source == 'Twitter for iPhone':
         return tweet.created_at < datetime.strptime('Feb 01 2017 +0000', '%b %d %Y %z')
@@ -19,7 +20,7 @@ def not_from_trump_device(tweet: Tweet) -> bool:
 
 def is_quote(tweet: Tweet) -> bool:
     bad_starts = ('"@', 'Via @')
-    commonly_quoted = {'Albert Einstein', 'Aristotle', 'Benjamin Franklin'}
+    commonly_quoted = {'Albert Einstein', 'Aristotle', 'Benjamin Franklin'} # TODO more?
     return tweet.text.startswith(bad_starts) or any((person in tweet.text) for person in commonly_quoted) \
         or (re.match(r'^[“|\"].*[”|\"]\s*[–|\-].*$', tweet.text) is not None)
 
