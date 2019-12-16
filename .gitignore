@@ -3,3 +3,4 @@ __pycache__/
 .idea/
 data/old/
 archive/.env
+model.pkl

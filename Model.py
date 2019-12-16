@@ -3,6 +3,7 @@ import multiprocessing as mp
 import random
 from collections import defaultdict
 from datetime import datetime
+from functools import partial
 from typing import List, NamedTuple, Iterable, Dict, Optional
 
 import nltk
@@ -41,7 +42,8 @@ class _TokenProbability(NamedTuple):
 
 class _Weights:
     def __init__(self, trigrams: Iterable[_Trigram] = None):
-        self._counts: Dict[_Bigram, Dict[Token, int]] = defaultdict(lambda: defaultdict(int))
+        # Using partial(defaultdict, int) instead of standard defaultdict(lambda: int) bc the latter cannot be pickled
+        self._counts: Dict[_Bigram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
 
         if trigrams is not None:
             for trigram in trigrams:

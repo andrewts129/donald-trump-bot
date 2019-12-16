@@ -36,14 +36,20 @@ def join_tokens(tokens: Iterable[Token]) -> str:
     return output.strip()
 
 
-if __name__ == '__main__':
-    with open('data/trump_tweets.ndjson', 'r') as f:
+def train_model(tweets_ndjson_filename: str) -> Model:
+    with open(tweets_ndjson_filename, 'r') as f:
         raw_tweets = ndjson.load(f)
 
     tweets = (parse_raw_tweet(tweet) for tweet in raw_tweets)
-    tweets = [tweet for tweet in tweets if should_use_tweet(tweet)]
+    tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
     model = Model(tweets)
+    return model
+
+
+def main():
+    # TODO remove this
+    model = train_model('data/trump_tweets.ndjson')
 
     for i in range(0, 10):
         chain = model.generate_tokens(100)
@@ -51,3 +57,7 @@ if __name__ == '__main__':
         print()
 
     sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
