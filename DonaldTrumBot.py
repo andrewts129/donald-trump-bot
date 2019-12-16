@@ -4,8 +4,8 @@ import sys
 from typing import Iterable
 from timeit import default_timer as timer
 
-from TweetDownloader import dump_all_tweets
 from Model import train_model_from_file
+from TweetDownloader import add_new_tweets_to_dump
 from namedtuples.Token import Token
 
 
@@ -43,7 +43,7 @@ def train_command() -> None:
 
 def update_command() -> None:
     output_file = 'data/trump_tweets.ndjson'  # TODO configurable
-    dump_all_tweets(output_file)
+    add_new_tweets_to_dump(output_file)
 
 
 def test_tweet_command() -> None:
