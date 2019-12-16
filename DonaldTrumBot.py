@@ -47,10 +47,10 @@ def tweet_command() -> None:
     api = tweepy.API(auth)
 
     for tweet_id in get_tweet_ids_to_reply_to(api):
-        post_reply_tweet(api, 'TEST1', tweet_id)
+        post_reply_tweet(api, 'TEST1', tweet_id)  # TODO
 
     if force_tweet or should_tweet_now(min_between_wakeups, target_avg_tweets_per_day):
-        post_tweet(api, 'TEST2')
+        post_tweet(api, 'TEST2')  # TODO
 
 
 def train_command() -> None:
