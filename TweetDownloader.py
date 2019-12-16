@@ -50,15 +50,14 @@ def _get_tweets_by_year(year: int) -> List[_Tweet]:
         return list(sorted(tweets, key=lambda tw: tw.id))
 
 
-def _get_all_tweets_after_year(year: int):
+def _get_all_tweets_after_year(start_year: int):
     # 'after' is inclusive
     all_tweets = []
 
-    while True:
+    for year in itertools.count(start_year):
         tweets = _get_tweets_by_year(year)
         if len(tweets) > 0:
             all_tweets.extend(tweets)
-            year += 1
         else:
             break
 
