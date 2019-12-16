@@ -13,8 +13,9 @@ def main():
     else:
         command = sys.argv[1]
         if command == 'tweet':
-            exit_status = 0  # TODO
+            exit_status = 2  # TODO
         elif command == 'train':
+            # TODO make these configurable
             input_file = 'data/trump_tweets.ndjson'
             output_file = 'model.pkl'
 
@@ -24,7 +25,7 @@ def main():
 
             exit_status = 0
         elif command == 'update':
-            exit_status = 0  # TODO
+            exit_status = 2  # TODO
         else:
             print('Invalid command')
 
