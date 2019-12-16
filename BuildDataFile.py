@@ -28,7 +28,7 @@ def flatten(super_list: List[List]) -> List:
     return list(itertools.chain(*super_list))
 
 
-def main():
+def dump_all_tweets(output_file: str) -> None:
     urls_to_query = (f'http://trumptwitterarchive.com/data/realdonaldtrump/{year}.json' for year in range(2009, 2020))
     responses = [requests.get(url).json() for url in urls_to_query]
 
@@ -38,10 +38,5 @@ def main():
 
     print(f'Retrieved {len(tweets)} tweets...')
 
-    output_file = '../data/trump_tweets.ndjson'
     with open(output_file, 'w') as f:
         ndjson.dump(tweet_dicts, f)
-
-
-if __name__ == '__main__':
-    main()

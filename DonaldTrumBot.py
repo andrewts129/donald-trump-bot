@@ -4,6 +4,7 @@ import sys
 from typing import Iterable
 from timeit import default_timer as timer
 
+from BuildDataFile import dump_all_tweets
 from Model import train_model_from_file
 from namedtuples.Token import Token
 
@@ -41,7 +42,8 @@ def train_command() -> None:
 
 
 def update_command() -> None:
-    pass
+    output_file = 'data/trump_tweets.ndjson'  # TODO configurable
+    dump_all_tweets(output_file)
 
 
 def test_tweet_command() -> None:
@@ -82,7 +84,7 @@ def main():
             exit_status = 0
         elif command == 'update':
             update_command()
-            exit_status = 2  # TODO
+            exit_status = 0
         elif command == 'test_tweet':
             test_tweet_command()
             exit_status = 0
