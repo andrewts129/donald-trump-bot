@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
+import os
 import pickle
 import sys
 from typing import Iterable
 from timeit import default_timer as timer
 
+import tweepy
+from dotenv import load_dotenv
+
 from Model import train_model_from_file
 from TweetDownloader import add_new_tweets_to_dump
+from TweetPoster import get_tweet_ids_to_reply_to, post_reply_tweet, should_tweet_now, post_tweet
 from namedtuples.Token import Token
+
+load_dotenv()
 
 
 def join_tokens(tokens: Iterable[Token]) -> str:
@@ -28,7 +35,22 @@ def join_tokens(tokens: Iterable[Token]) -> str:
 
 
 def tweet_command() -> None:
-    pass
+    # TODO configurable
+    min_between_wakeups = 5
+    target_avg_tweets_per_day = 2.5
+    force_tweet = True
+
+    auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
+                               consumer_secret=os.environ["TW_CONSUMER_SECRET"])
+    auth.set_access_token(key=os.environ["TW_ACCESS_TOKEN"],
+                          secret=os.environ["TW_ACCESS_SECRET"])
+    api = tweepy.API(auth)
+
+    for tweet_id in get_tweet_ids_to_reply_to(api):
+        post_reply_tweet(api, 'TEST1', tweet_id)
+
+    if force_tweet or should_tweet_now(min_between_wakeups, target_avg_tweets_per_day):
+        post_tweet(api, 'TEST2')
 
 
 def train_command() -> None:
@@ -78,7 +100,7 @@ def main():
         command = sys.argv[1]
         if command == 'tweet':
             tweet_command()
-            exit_status = 2  # TODO
+            exit_status = 0
         elif command == 'train':
             train_command()
             exit_status = 0
