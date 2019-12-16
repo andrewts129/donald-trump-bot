@@ -9,36 +9,22 @@ import tweepy
 from dotenv import load_dotenv
 
 from Model import train_model_from_file
+from TweetBuilder import create_tweet
 from TweetDownloader import add_new_tweets_to_dump
 from TweetPoster import get_tweet_ids_to_reply_to, post_reply_tweet, should_tweet_now, post_tweet
-from namedtuples.Token import Token
 
 load_dotenv()
 
 
-def join_tokens(tokens: Iterable[Token]) -> str:
-    # TODO put this somewhere else
-    output = ' '.join(token.word for token in tokens)
-
-    replacements = [
-        (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), (' :', ':'), (' ;', ';'), ('... ', '...'), (' …', '…'),
-        ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'),
-        ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
-        ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
-        (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0")
-    ]
-    for replacement_pair in replacements:
-        output = output.replace(*replacement_pair)
-
-    # TODO do something about unmatched parenthesis/quotes
-    return output.strip()
-
-
 def tweet_command() -> None:
     # TODO configurable
+    model_file = 'model.pkl'
     min_between_wakeups = 5
     target_avg_tweets_per_day = 2.5
     force_tweet = True
+
+    with open(model_file, 'rb') as f:
+        model = pickle.load(f)
 
     auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
                                consumer_secret=os.environ["TW_CONSUMER_SECRET"])
@@ -47,10 +33,12 @@ def tweet_command() -> None:
     api = tweepy.API(auth)
 
     for tweet_id in get_tweet_ids_to_reply_to(api):
-        post_reply_tweet(api, 'TEST1', tweet_id)  # TODO
+        tweet = create_tweet(model, 200)  # TODO 240?
+        post_reply_tweet(api, tweet, tweet_id)
 
     if force_tweet or should_tweet_now(min_between_wakeups, target_avg_tweets_per_day):
-        post_tweet(api, 'TEST2')  # TODO
+        tweet = create_tweet(model, 240)
+        post_tweet(api, tweet)
 
 
 def train_command() -> None:
@@ -80,8 +68,7 @@ def test_tweet_command() -> None:
     tweet_time_start = timer()
     tweets = []
     for i in range(0, num_tweets):
-        chain = model.generate_tokens(100)
-        tweets.append(join_tokens(chain))
+        tweets.append(create_tweet(model, 240))
     tweet_time_total = timer() - tweet_time_start
 
     print(f'Model training time: {train_time_total:.2f}s')

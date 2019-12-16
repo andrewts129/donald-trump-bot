@@ -31,6 +31,8 @@ def post_reply_tweet(api: API, tweet: str, status_id_to_reply_to: int) -> None:
 
 
 def get_tweet_ids_to_reply_to(api: API) -> Set[int]:
-    liked_tweet_ids = _get_liked_tweet_ids(api)
-    mentioned_tweet_ids = _get_mentions_tweet_ids(api)
-    return mentioned_tweet_ids - liked_tweet_ids
+    # TODO this is broken
+    # liked_tweet_ids = _get_liked_tweet_ids(api)
+    # mentioned_tweet_ids = _get_mentions_tweet_ids(api)
+    # return mentioned_tweet_ids - liked_tweet_ids
+    return set()
