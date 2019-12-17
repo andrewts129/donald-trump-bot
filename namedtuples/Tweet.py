@@ -23,6 +23,6 @@ def tweet_json_decode_hook(tweet_json: Dict):
         tweet_json['id'] if 'id' in tweet_json else int(tweet_json['id_str']),
         tweet_json['text'],
         tweet_json['source'],
-        datetime.strptime(tweet_json['created_at'], '%a %b %d %H:%M:%S %z %Y'),
+        datetime.strptime(tweet_json['created_at'], _DATE_STRING_FORMAT),
         tweet_json['is_retweet'] or tweet_json['text'].startswith('RT @')  # Not all retweets are marked with the bool?
     )
