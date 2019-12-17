@@ -49,8 +49,12 @@ def full_dump(output_file: str) -> None:
 
 # This exists so that we won't overwrite data we have in case something happens to trumptwitterarchive.com
 def add_new_tweets_to_dump(output_file: str) -> None:
-    with open(output_file, 'r') as fp:
-        existing_tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
+
+    try:
+        with open(output_file, 'r') as fp:
+            existing_tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
+    except FileNotFoundError:
+        existing_tweets = []
 
     existing_tweet_ids = set(tweet.id for tweet in existing_tweets)
     newest_tweet_year = existing_tweets[-1].created_at.year if len(existing_tweets) > 0 else 2009
