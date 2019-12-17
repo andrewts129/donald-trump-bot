@@ -1,5 +1,7 @@
 from datetime import datetime
-from typing import NamedTuple
+from typing import NamedTuple, Dict
+
+_DATE_STRING_FORMAT = '%a %b %d %H:%M:%S %z %Y'
 
 
 class Tweet(NamedTuple):
@@ -10,9 +12,17 @@ class Tweet(NamedTuple):
     is_retweet: bool
 
 
-def tweet_string_to_datetime(s: str) -> datetime:
-    return datetime.strptime(s, '%a %b %d %H:%M:%S %z %Y')
+def encode_tweet_for_json(tweet: Tweet) -> Dict:
+    result = tweet._asdict()
+    result['created_at'] = result['created_at'].strftime(_DATE_STRING_FORMAT)
+    return result
 
 
-def tweet_datetime_to_string(dt: datetime) -> str:
-    return dt.strftime('%a %b %d %H:%M:%S %z %Y')
+def tweet_json_decode_hook(tweet_json: Dict):
+    return Tweet(
+        tweet_json['id'] if 'id' in tweet_json else int(tweet_json['id_str']),
+        tweet_json['text'],
+        tweet_json['source'],
+        datetime.strptime(tweet_json['created_at'], '%a %b %d %H:%M:%S %z %Y'),
+        tweet_json['is_retweet'] or tweet_json['text'].startswith('RT @')  # Not all retweets are marked with the bool?
+    )

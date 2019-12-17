@@ -12,7 +12,7 @@ from numpy.random import beta
 
 from TweetValidator import should_use_tweet
 from namedtuples.Token import Token
-from namedtuples.Tweet import Tweet, tweet_string_to_datetime
+from namedtuples.Tweet import Tweet, tweet_json_decode_hook
 
 
 class _Bigram(NamedTuple):
@@ -121,19 +121,9 @@ class Model:
 
 
 def train_model_from_file(tweets_ndjson_filename: str) -> Model:
-    def parse_raw_tweet(raw_tweet: Dict) -> Tweet:
-        return Tweet(
-            id=int(raw_tweet['id']),
-            text=raw_tweet['text'],
-            source=raw_tweet['source'],
-            created_at=tweet_string_to_datetime(raw_tweet['created_at']),
-            is_retweet=raw_tweet['is_retweet']
-        )
-
     with open(tweets_ndjson_filename, 'r') as f:
-        raw_tweets = ndjson.load(f)
+        tweets = ndjson.load(f, object_hook=tweet_json_decode_hook)
 
-    tweets = (parse_raw_tweet(tweet) for tweet in raw_tweets)
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
     model = Model(tweets)
