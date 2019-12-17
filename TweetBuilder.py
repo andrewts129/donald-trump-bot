@@ -23,6 +23,22 @@ def _fix_quotes(s: str) -> str:
         return f'{fixed_head}{fixed_tail}'
 
 
+def _fix_parenthesis(s: str) -> str:
+    first_opener_index = s.find('(')
+    first_closer_index = s.find(')')
+
+    if first_opener_index == -1:
+        return s.replace(')', ' ')
+    elif first_closer_index == -1:
+        return s.replace('(', ' ')
+    else:
+        up_to_first_opener = s[:first_opener_index].strip()
+        between_parenthesis = s[first_opener_index + 1:first_closer_index].strip()
+        after_first_closer = s[first_closer_index + 1:].strip()
+
+        return f'{up_to_first_opener} ({_fix_parenthesis(between_parenthesis)}) {_fix_parenthesis(after_first_closer)}'
+
+
 def _join_tokens(tokens: Iterable[Token]) -> str:
     output = ' '.join(token.word for token in tokens)
 
@@ -32,13 +48,15 @@ def _join_tokens(tokens: Iterable[Token]) -> str:
         ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'),
         ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
         ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
-        (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0")
+        (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0"), (" ' ", ' " ')
     ]
     for replacement_pair in replacements:  # Order does matter
         output = output.replace(*replacement_pair)
 
     output = _fix_quotes(output)
-    # TODO do something about unmatched parenthesis
+    output = _fix_parenthesis(output)
+    output = output.replace('  ', ' ')  # The above methods sometimes introduce double spaces
+
     return output.strip()
 
 
