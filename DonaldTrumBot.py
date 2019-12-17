@@ -20,7 +20,7 @@ def tweet_command() -> None:
     model_file = 'model.pkl'
     min_between_wakeups = 5
     target_avg_tweets_per_day = 2.5
-    force_tweet = True
+    force_tweet = False
 
     with open(model_file, 'rb') as f:
         model = pickle.load(f)

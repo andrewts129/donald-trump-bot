@@ -15,6 +15,7 @@ def _get_tweets_by_year(year: int) -> List[Tweet]:
     url = f'http://trumptwitterarchive.com/data/realdonaldtrump/{year}.json'
     response = requests.get(url)
 
+    # The website redirects you to the homepage instead of giving 404s
     if response.text.startswith('<!DOCTYPE html>'):
         return []
     else:
