@@ -22,8 +22,8 @@ def tweet_command() -> None:
     target_avg_tweets_per_day = 2.5
     force_tweet = False
 
-    with open(model_file, 'rb') as f:
-        model = pickle.load(f)
+    with open(model_file, 'rb') as fp:
+        model = pickle.load(fp)
 
     auth = tweepy.OAuthHandler(consumer_key=os.environ["TW_CONSUMER_KEY"],
                                consumer_secret=os.environ["TW_CONSUMER_SECRET"])
@@ -46,8 +46,8 @@ def train_command() -> None:
     output_file = 'model.pkl'
 
     model = train_model_from_file(input_file)
-    with open(output_file, 'wb') as f:
-        pickle.dump(model, f)
+    with open(output_file, 'wb') as fp:
+        pickle.dump(model, fp)
 
 
 def update_command() -> None:

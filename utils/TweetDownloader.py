@@ -43,14 +43,14 @@ def _get_all_tweets() -> List[Tweet]:
 
 def full_dump(output_file: str) -> None:
     tweets = _get_all_tweets()
-    with open(output_file, 'w') as f:
-        ndjson.dump((encode_tweet_for_json(tweet) for tweet in tweets), f)
+    with open(output_file, 'w') as fp:
+        ndjson.dump((encode_tweet_for_json(tweet) for tweet in tweets), fp)
 
 
 # This exists so that we won't overwrite data we have in case something happens to trumptwitterarchive.com
 def add_new_tweets_to_dump(output_file: str) -> None:
-    with open(output_file, 'r') as f:
-        existing_tweets = ndjson.load(f, object_hook=tweet_json_decode_hook)
+    with open(output_file, 'r') as fp:
+        existing_tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     existing_tweet_ids = set(tweet.id for tweet in existing_tweets)
     newest_tweet_year = existing_tweets[-1].created_at.year if len(existing_tweets) > 0 else 2009
@@ -59,5 +59,5 @@ def add_new_tweets_to_dump(output_file: str) -> None:
     new_tweets = (tweet for tweet in maybe_new_tweets if tweet.id not in existing_tweet_ids)
 
     all_tweets = itertools.chain(existing_tweets, new_tweets)
-    with open(output_file, 'w') as f:
-        ndjson.dump((encode_tweet_for_json(tweet) for tweet in all_tweets), f)
+    with open(output_file, 'w') as fp:
+        ndjson.dump((encode_tweet_for_json(tweet) for tweet in all_tweets), fp)

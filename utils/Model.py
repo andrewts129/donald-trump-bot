@@ -121,8 +121,8 @@ class Model:
 
 
 def train_model_from_file(tweets_ndjson_filename: str) -> Model:
-    with open(tweets_ndjson_filename, 'r') as f:
-        tweets = ndjson.load(f, object_hook=tweet_json_decode_hook)
+    with open(tweets_ndjson_filename, 'r') as fp:
+        tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
