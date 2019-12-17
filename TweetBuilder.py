@@ -38,7 +38,13 @@ def _prune_tweet(tweet: str, max_length: int) -> str:
 
 
 def create_tweet(model: Model, max_length: int) -> str:
-    tokens_to_generate = max_length // 3  # Somewhat arbitrary
-    tokens = model.generate_tokens(tokens_to_generate)
-    too_long_tweet = _join_tokens(tokens)
-    return _prune_tweet(too_long_tweet, max_length)
+    tweet = ''
+
+    # Keep trying in case the entire thing gets pruned
+    while len(tweet) < 5:  # 5 is arbitrary
+        tokens_to_generate = max_length // 3  # 3 is also somewhat arbitrary
+        tokens = model.generate_tokens(tokens_to_generate)
+        too_long_tweet = _join_tokens(tokens)
+        tweet = _prune_tweet(too_long_tweet, max_length)
+
+    return tweet
