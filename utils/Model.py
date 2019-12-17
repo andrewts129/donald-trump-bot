@@ -10,7 +10,7 @@ import nltk
 from nltk.tokenize.casual import TweetTokenizer
 from numpy.random import beta
 
-from TweetValidator import should_use_tweet
+from utils.TweetValidator import should_use_tweet
 from namedtuples.Token import Token
 from namedtuples.Tweet import Tweet, tweet_json_decode_hook
 

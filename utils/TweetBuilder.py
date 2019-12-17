@@ -2,7 +2,7 @@ from typing import Iterable
 
 import nltk
 
-from Model import Model
+from utils.Model import Model
 from namedtuples.Token import Token
 
 
