@@ -45,17 +45,18 @@ def _join_tokens(tokens: Iterable[Token]) -> str:
     # TODO regex replacement for two-letter acronyms
     replacements = [
         (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), (' :', ':'), (' ;', ';'), ('... ', '...'), (' …', '…'),
-        ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'),
+        ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'), ('T. V.', 'T.V.'),
         ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
         ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
-        (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0"), (" ' ", ' " ')
+        (" ' s", "'s"), (" ' v", "'v"), (" ' m", "'m"), (" ' re", "'re"), ("' 0", "'0"), (" ' ", ' " ')
     ]
     for replacement_pair in replacements:  # Order does matter
         output = output.replace(*replacement_pair)
 
     output = _fix_quotes(output)
     output = _fix_parenthesis(output)
-    output = output.replace('  ', ' ')  # The above methods sometimes introduce double spaces
+    output = output.replace('   ', ' ')  # The above methods sometimes introduce extra spaces
+    output = output.replace('  ', ' ')
 
     return output.strip()
 
