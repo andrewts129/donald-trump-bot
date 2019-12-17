@@ -6,9 +6,27 @@ from Model import Model
 from namedtuples.Token import Token
 
 
+def _fix_quotes(s: str) -> str:
+    first_quote_index = s.find('"')
+    second_quote_index = s.find('"', first_quote_index + 1)
+
+    # If there was only one quote
+    if second_quote_index == -1:
+        return s.replace(' " ', ' ')
+    else:
+        head = s[:second_quote_index + 2]  # Get the whitespace after it too
+        fixed_head = head.replace(' " ', ' "', 1).replace(' " ', '" ', 1)
+
+        tail = s[second_quote_index + 2:]
+        fixed_tail = _fix_quotes(tail)
+
+        return f'{fixed_head}{fixed_tail}'
+
+
 def _join_tokens(tokens: Iterable[Token]) -> str:
     output = ' '.join(token.word for token in tokens)
 
+    # TODO regex replacement for two-letter acronyms
     replacements = [
         (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), (' :', ':'), (' ;', ';'), ('... ', '...'), (' …', '…'),
         ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'),
@@ -16,10 +34,11 @@ def _join_tokens(tokens: Iterable[Token]) -> str:
         ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
         (" ' s", "'s"), (" ' v", "'v"), (" ' re", "'re"), ("' 0", "'0")
     ]
-    for replacement_pair in replacements:
+    for replacement_pair in replacements:  # Order does matter
         output = output.replace(*replacement_pair)
 
-    # TODO do something about unmatched parenthesis/quotes
+    output = _fix_quotes(output)
+    # TODO do something about unmatched parenthesis
     return output.strip()
 
 

@@ -73,6 +73,9 @@ def test_tweet_command() -> None:
     print(f'Model training time: {train_time_total:.2f}s')
     print(f'Tweet building time: {tweet_time_total:.2f}s')
     print()
+    print(f'Shortest Tweet: {min(len(tweet) for tweet in tweets)}')
+    print(f'Longest Tweet:  {max(len(tweet) for tweet in tweets)}')
+    print()
     for tweet in tweets:
         print(tweet)
 
