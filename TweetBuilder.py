@@ -48,7 +48,7 @@ def _prune_tweet(tweet: str, max_length: int) -> str:
     result = ''
     for sentence in sentences:
         result_after_appending = f'{result} {sentence}'
-        if len(result) > max_length:
+        if len(result_after_appending) > max_length:
             break
         else:
             result = result_after_appending
