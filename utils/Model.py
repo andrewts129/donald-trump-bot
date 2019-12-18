@@ -1,4 +1,5 @@
 import itertools
+import multiprocessing as mp
 import random
 from collections import defaultdict
 from functools import partial
@@ -110,8 +111,10 @@ class Model:
 
     def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
         tweet_texts = (tweet.text for tweet in tweets)
-        tokenized_tweets = (self._tokenizer.tokenize(tweet_text) for tweet_text in tweet_texts)
-        pos_tagged_tokenized_tweets = (nltk.pos_tag(tweet) for tweet in tokenized_tweets)
+
+        with mp.Pool() as pool:
+            tokenized_tweets = pool.map(self._tokenizer.tokenize, tweet_texts)
+            pos_tagged_tokenized_tweets = pool.map(nltk.pos_tag, tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
