@@ -1,5 +1,4 @@
 import itertools
-import multiprocessing as mp
 import random
 from collections import defaultdict
 from functools import partial
@@ -51,16 +50,16 @@ class _Weights:
 
 
 class Model:
-    def __init__(self, tweets: Iterable[Tweet] = None, num_processes: Optional[int] = 1):
+    def __init__(self, tweets: Iterable[Tweet] = None):
         self._tokenizer = TweetTokenizer()
         self._seeds = []
         self._weights = _Weights()
 
         if tweets is not None:
-            self.fit(tweets, num_processes)
+            self.fit(tweets)
 
-    def fit(self, tweets: Iterable[Tweet], num_processes: Optional[int] = 1) -> None:
-        tokenized_tweets = self._preprocess_tweets(tweets, num_processes)
+    def fit(self, tweets: Iterable[Tweet]) -> None:
+        tokenized_tweets = self._preprocess_tweets(tweets)
 
         # Get the first bigram from each tweet
         self._seeds = [Model._to_bigrams(tweet)[0] for tweet in tokenized_tweets if len(tweet) > 2]
@@ -109,12 +108,10 @@ class Model:
     def _to_trigrams(tokens: Iterable[Token]) -> List[_Trigram]:
         return [_Trigram(*gram) for gram in nltk.ngrams(tokens, 3)]
 
-    def _preprocess_tweets(self, tweets: Iterable[Tweet], num_processes: Optional[int] = 1) -> List[List[Token]]:
+    def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
         tweet_texts = (tweet.text for tweet in tweets)
-
-        with mp.Pool(processes=num_processes) as pool:
-            tokenized_tweets = pool.map(self._tokenizer.tokenize, tweet_texts)
-            pos_tagged_tokenized_tweets = pool.map(nltk.pos_tag, tokenized_tweets)
+        tokenized_tweets = (self._tokenizer.tokenize(tweet_text) for tweet_text in tweet_texts)
+        pos_tagged_tokenized_tweets = (nltk.pos_tag(tweet) for tweet in tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
