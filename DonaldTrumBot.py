@@ -17,7 +17,7 @@ load_dotenv()
 
 def tweet_command() -> None:
     # TODO configurable
-    model_file = 'model.pkl'
+    model_file = 'data/model.pkl'
     min_between_wakeups = 5
     target_avg_tweets_per_day = 2.5
     force_tweet = False
@@ -43,7 +43,7 @@ def tweet_command() -> None:
 def train_command() -> None:
     # TODO make these configurable
     input_file = 'data/trump_tweets.ndjson'
-    output_file = 'model.pkl'
+    output_file = 'data/model.pkl'
 
     model = train_model_from_file(input_file)
     with open(output_file, 'wb') as fp:
