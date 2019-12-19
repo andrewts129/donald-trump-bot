@@ -22,7 +22,7 @@ def _get_mentions_tweet_ids(api: API) -> Set[int]:
 def should_tweet_now(min_between_wakeups: float, target_avg_tweets_per_day: float) -> bool:
     wakeups_per_day = (24 * 60) / min_between_wakeups
     chance_to_tweet = target_avg_tweets_per_day / wakeups_per_day
-    return chance_to_tweet > random.random()
+    return chance_to_tweet > random()
 
 
 def post_tweet(api: API, tweet: str) -> None:
