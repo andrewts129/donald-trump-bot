@@ -1,0 +1,6 @@
+.env
+venv/
+data/
+*.pkl
+README.md
+.gitignore
