@@ -12,6 +12,7 @@ from utils.TweetBuilder import create_tweet
 from utils.TweetDownloader import add_new_tweets_to_dump
 from utils.TweetPoster import get_tweet_ids_to_reply_to, post_reply_tweet, should_tweet_now, post_tweet
 
+# TODO logging
 load_dotenv()
 
 
