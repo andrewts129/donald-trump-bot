@@ -1,0 +1,11 @@
+language: python
+branches:
+  only:
+    - master
+services:
+  - docker
+script:
+  - docker build -t donaldtrumbot .
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker tag donaldtrumbot andrewts129/donaldtrumbot:latest
+  - docker push andrewts129/donaldtrumbot:latest
