@@ -14,6 +14,5 @@ configured to post about 2.5 times a day, on average.
 
 TODO:
 * Logging
-* CI/CD
 * More configuration options (lots of hardcoding right now)
 * Experiment with using a neural network model instead of plain Markov chains
