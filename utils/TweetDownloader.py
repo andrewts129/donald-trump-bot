@@ -49,7 +49,6 @@ def full_dump(output_file: str) -> None:
 
 # This exists so that we won't overwrite data we have in case something happens to trumptwitterarchive.com
 def add_new_tweets_to_dump(output_file: str) -> None:
-
     try:
         with open(output_file, 'r') as fp:
             existing_tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)

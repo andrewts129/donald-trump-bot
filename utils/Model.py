@@ -45,17 +45,30 @@ class Model:
     # TODO make n configurable
     def __init__(self, tweets: Iterable[Tweet] = None):
         self._tokenizer = TweetTokenizer()
-        self._seeds: List[_NGram] = []
-        self._weights = _Weights()
+
+        # Initialized when model is fit
+        self._seeds: Optional[List[_NGram]] = None
+        self._weights: Optional[_Weights] = None
 
         if tweets is not None:
             self.fit(tweets)
 
     def fit(self, tweets: Iterable[Tweet]) -> None:
+        self._seeds = []
+        self._weights = _Weights()
+
+        self.partial_fit(tweets)
+
+    def partial_fit(self, tweets: Iterable[Tweet]) -> None:
+        if self._seeds is None:
+            self._seeds = []
+        if self._weights is None:
+            self._weights = _Weights()
+
         tokenized_tweets = self._preprocess_tweets(tweets)
 
         # Get the first bigram from each tweet
-        self._seeds = [Model._to_ngrams(tweet, 2)[0] for tweet in tokenized_tweets if len(tweet) > 2]
+        self._seeds.extend([Model._to_ngrams(tweet, 2)[0] for tweet in tokenized_tweets if len(tweet) > 2])
 
         trigrammed_tweets = (Model._to_ngrams(tweet, 3) for tweet in tokenized_tweets)
         for trigram in itertools.chain(*trigrammed_tweets):  # Flattens the nested lists

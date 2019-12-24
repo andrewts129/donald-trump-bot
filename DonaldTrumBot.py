@@ -46,6 +46,7 @@ def train_command() -> None:
     input_file = 'data/trump_tweets.ndjson'
     output_file = 'data/model.pkl'
 
+    # TODO use partial fit method
     model = train_model_from_file(input_file)
     with open(output_file, 'wb') as fp:
         pickle.dump(model, fp)
