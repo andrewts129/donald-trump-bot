@@ -28,14 +28,11 @@ class _Weights:
         self._counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
 
         if n_plus_one_grams is not None:
-            for ngram in n_plus_one_grams:
-                self.add(ngram)
+            for n_plus_one_gram in n_plus_one_grams:
+                self.add(n_plus_one_gram[:-1], n_plus_one_gram[-1])
 
-    def add(self, n_plus_one_gram: _NGram) -> None:
-        # TODO make this accept an ngram and then a next token
-        beginning_n_gram = n_plus_one_gram[:-1]
-        last_token = n_plus_one_gram[-1]
-        self._counts[beginning_n_gram][last_token] += 1
+    def add(self, ngram: _NGram, next_token: Token) -> None:
+        self._counts[ngram][next_token] += 1
 
     def get_successor_probabilities(self, ngram: _NGram) -> List[_TokenProbability]:
         total_count = sum(self._counts[ngram].values())
@@ -73,7 +70,9 @@ class Model:
 
         n_plus_one_grammed_tweets = (Model._to_ngrams(tweet, self._n + 1) for tweet in tokenized_tweets)
         for n_plus_one_gram in itertools.chain(*n_plus_one_grammed_tweets):  # Flattens the nested lists
-            self._weights.add(n_plus_one_gram)
+            ngram = n_plus_one_gram[:-1]
+            next_token = n_plus_one_gram[-1]
+            self._weights.add(ngram, next_token)
 
     def get_seed(self) -> List[Token]:
         random_ngram = random.choice(self._seeds)
