@@ -3,7 +3,7 @@ import multiprocessing as mp
 import random
 from collections import defaultdict
 from functools import partial
-from typing import List, NamedTuple, Iterable, Dict, Optional
+from typing import List, NamedTuple, Iterable, Dict, Optional, Tuple
 
 import ndjson
 import nltk
@@ -14,16 +14,7 @@ from utils.TweetValidator import should_use_tweet
 from namedtuples.Token import Token
 from namedtuples.Tweet import Tweet, tweet_json_decode_hook
 
-
-class _Bigram(NamedTuple):
-    first: Token
-    second: Token
-
-
-class _Trigram(NamedTuple):
-    first: Token
-    second: Token
-    third: Token
+_NGram = Tuple[Token, ...]
 
 
 class _TokenProbability(NamedTuple):
@@ -32,28 +23,29 @@ class _TokenProbability(NamedTuple):
 
 
 class _Weights:
-    def __init__(self, trigrams: Iterable[_Trigram] = None):
+    def __init__(self, trigrams: Iterable[_NGram] = None):
         # Using partial(defaultdict, int) instead of standard defaultdict(lambda: int) bc the latter cannot be pickled
-        self._counts: Dict[_Bigram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
+        self._counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
 
         if trigrams is not None:
             for trigram in trigrams:
                 self.add(trigram)
 
-    def add(self, trigram: _Trigram) -> None:
-        beginning_bigram = _Bigram(trigram.first, trigram.second)
-        last_token = trigram.third
+    def add(self, trigram: _NGram) -> None:
+        beginning_bigram = (trigram[0], trigram[1])
+        last_token = trigram[-1]
         self._counts[beginning_bigram][last_token] += 1
 
-    def get_successor_probabilities(self, bigram: _Bigram) -> List[_TokenProbability]:
+    def get_successor_probabilities(self, bigram: _NGram) -> List[_TokenProbability]:
         total_count = sum(self._counts[bigram].values())
         return [_TokenProbability(pair[0], pair[1] / total_count) for pair in self._counts[bigram].items()]
 
 
 class Model:
+    # TODO make n configurable
     def __init__(self, tweets: Iterable[Tweet] = None):
         self._tokenizer = TweetTokenizer()
-        self._seeds = []
+        self._seeds: List[_NGram] = []
         self._weights = _Weights()
 
         if tweets is not None:
@@ -63,18 +55,18 @@ class Model:
         tokenized_tweets = self._preprocess_tweets(tweets)
 
         # Get the first bigram from each tweet
-        self._seeds = [Model._to_bigrams(tweet)[0] for tweet in tokenized_tweets if len(tweet) > 2]
+        self._seeds = [Model._to_ngrams(tweet, 2)[0] for tweet in tokenized_tweets if len(tweet) > 2]
 
-        trigrammed_tweets = (Model._to_trigrams(tweet) for tweet in tokenized_tweets)
+        trigrammed_tweets = (Model._to_ngrams(tweet, 3) for tweet in tokenized_tweets)
         for trigram in itertools.chain(*trigrammed_tweets):  # Flattens the nested lists
             self._weights.add(trigram)
 
     def get_seed(self) -> List[Token]:
         random_bigram = random.choice(self._seeds)
-        return [random_bigram.first, random_bigram.second]
+        return [random_bigram[0], random_bigram[1]]
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        last_bigram = _Bigram(tokens[-2], tokens[-1])
+        last_bigram = (tokens[-2], tokens[-1])
 
         successors = self._weights.get_successor_probabilities(last_bigram)
         successors = list(sorted(successors, key=lambda sp: sp.probability))
@@ -102,12 +94,8 @@ class Model:
         return chain
 
     @staticmethod
-    def _to_bigrams(tokens: Iterable[Token]) -> List[_Bigram]:
-        return [_Bigram(*gram) for gram in nltk.ngrams(tokens, 2)]
-
-    @staticmethod
-    def _to_trigrams(tokens: Iterable[Token]) -> List[_Trigram]:
-        return [_Trigram(*gram) for gram in nltk.ngrams(tokens, 3)]
+    def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
+        return list(nltk.ngrams(tokens, n))
 
     def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
         tweet_texts = (tweet.text for tweet in tweets)
