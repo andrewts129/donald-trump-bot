@@ -45,9 +45,10 @@ def train_command() -> None:
     # TODO make these configurable
     input_file = 'data/trump_tweets.ndjson'
     output_file = 'data/model.pkl'
+    n = 2
 
     # TODO use partial fit method
-    model = train_model_from_file(input_file)
+    model = train_model_from_file(input_file, n)
     with open(output_file, 'wb') as fp:
         pickle.dump(model, fp)
 
@@ -61,9 +62,10 @@ def test_tweet_command() -> None:
     # TODO make these configurable
     input_file = 'data/trump_tweets.ndjson'
     num_tweets = 10
+    n = 2
 
     train_time_start = timer()
-    model = train_model_from_file(input_file)
+    model = train_model_from_file(input_file, n)
     train_time_total = timer() - train_time_start
 
     tweet_time_start = timer()
