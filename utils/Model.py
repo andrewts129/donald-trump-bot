@@ -65,7 +65,7 @@ class Model:
 
         tokenized_tweets = self._preprocess_tweets(tweets)
 
-        # Get the first bigram from each tweet
+        # Get the first ngram from each tweet
         self._seeds.extend([Model._to_ngrams(tweet, self._n)[0] for tweet in tokenized_tweets if len(tweet) > self._n])
 
         n_plus_one_grammed_tweets = (Model._to_ngrams(tweet, self._n + 1) for tweet in tokenized_tweets)
