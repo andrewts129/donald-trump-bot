@@ -38,7 +38,7 @@ def tweet_command(args: Dict) -> None:
 
 def train_command(args: Dict) -> None:
     # TODO use partial fit method
-    model = train_model_from_file(args['tweet_file'], args['ngram_length'])
+    model = train_model_from_file(args['tweet_file'], args['min_ngram_length'], args['max_ngram_length'], args['lazy_fit'])
     with open(args['model_file'], 'wb') as fp:
         pickle.dump(model, fp)
 
@@ -49,7 +49,7 @@ def update_command(args: Dict) -> None:
 
 def test_tweet_command(args: Dict) -> None:
     train_time_start = timer()
-    model = train_model_from_file(args['tweet_file'], args['ngram_length'], args['lazy_fit'])
+    model = train_model_from_file(args['tweet_file'], args['min_ngram_length'], args['max_ngram_length'], args['lazy_fit'])
     train_time_total = timer() - train_time_start
 
     tweet_time_start = timer()

@@ -47,7 +47,7 @@ class _Weights:
 
 
 class Model:
-    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 5):
+    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
         self._min_n = min_n
         self._max_n = max_n
         self._tokenizer = TweetTokenizer()
@@ -118,7 +118,7 @@ class Model:
             self._seeds = []
 
         # Get the first ngram from each tweet
-        self._seeds.extend([Model._to_ngrams(tweet, self._n)[0] for tweet in tokenized_tweets if len(tweet) > self._n])
+        self._seeds.extend([Model._to_ngrams(tweet, self._min_n)[0] for tweet in tokenized_tweets if len(tweet) > self._min_n])
 
     @staticmethod
     def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
@@ -136,9 +136,9 @@ class Model:
 
 
 class LazyFitModel(Model):
-    def __init__(self, tweets: Iterable[Tweet] = None, n: int = 2):
+    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
         self._tokenized_tweets = None
-        super().__init__(tweets, n)
+        super().__init__(tweets, min_n, max_n)
 
     def fit(self, tweets: Iterable[Tweet]) -> None:
         self._tokenized_tweets = []
@@ -152,11 +152,12 @@ class LazyFitModel(Model):
             self._weights = _Weights()
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        last_n_tokens = tokens[-self._n:]
+        # TODO implement dynamic n selection
+        last_n_tokens = tokens[-self._min_n:]
         relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
 
         for tweet in relevant_tweets:
-            for n_plus_one_gram in Model._to_ngrams(tweet, self._n + 1):
+            for n_plus_one_gram in Model._to_ngrams(tweet, self._min_n + 1):
                 ngram = n_plus_one_gram[:-1]
                 next_token = n_plus_one_gram[-1]
                 self._weights.add(ngram, next_token)
@@ -166,15 +167,15 @@ class LazyFitModel(Model):
         return prediction
 
 
-def train_model_from_file(tweets_ndjson_filename: str, n: int = 2, lazy_fitting: bool = False) -> Model:
+def train_model_from_file(tweets_ndjson_filename: str, min_n: int = 2, max_n: int = 7, lazy_fitting: bool = False) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
     if lazy_fitting:
-        model = LazyFitModel(tweets, n)
+        model = LazyFitModel(tweets, min_n, max_n)
     else:
-        model = Model(tweets, n)
+        model = Model(tweets, min_n, max_n)
 
     return model
