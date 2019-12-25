@@ -124,11 +124,43 @@ class Model:
         return [[Token(*token) for token in tweet] for tweet in pos_tagged_tokenized_tweets]
 
 
+class LazyFitModel(Model):
+    def __init__(self, tweets: Iterable[Tweet] = None, n: int = 2):
+        self._tokenized_tweets = None
+        super().__init__(tweets, n)
+
+    def fit(self, tweets: Iterable[Tweet]) -> None:
+        self._seeds = []
+        self._weights = _Weights()
+        self._tokenized_tweets = []
+
+        self.partial_fit(tweets)
+
+    def partial_fit(self, tweets: Iterable[Tweet]) -> None:
+        self._tokenized_tweets = self._preprocess_tweets(tweets)
+        self._set_seeds(self._tokenized_tweets)
+
+        if self._weights is None:
+            self._weights = _Weights()
+
+    def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
+        last_n_tokens = tokens[-self._n:]
+        relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
+
+        for tweet in relevant_tweets:
+            for n_plus_one_gram in Model._to_ngrams(tweet, self._n + 1):
+                ngram = n_plus_one_gram[:-1]
+                next_token = n_plus_one_gram[-1]
+                self._weights.add(ngram, next_token)
+
+        return super().predict_next_token(tokens)
+
+
 def train_model_from_file(tweets_ndjson_filename: str, n: int = 2) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
-    model = Model(tweets, n)
+    model = LazyFitModel(tweets, n)
     return model
