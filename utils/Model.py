@@ -58,15 +58,11 @@ class Model:
         self.partial_fit(tweets)
 
     def partial_fit(self, tweets: Iterable[Tweet]) -> None:
-        if self._seeds is None:
-            self._seeds = []
+        tokenized_tweets = self._preprocess_tweets(tweets)
+        self._set_seeds(tokenized_tweets)
+
         if self._weights is None:
             self._weights = _Weights()
-
-        tokenized_tweets = self._preprocess_tweets(tweets)
-
-        # Get the first ngram from each tweet
-        self._seeds.extend([Model._to_ngrams(tweet, self._n)[0] for tweet in tokenized_tweets if len(tweet) > self._n])
 
         n_plus_one_grammed_tweets = (Model._to_ngrams(tweet, self._n + 1) for tweet in tokenized_tweets)
         for n_plus_one_gram in itertools.chain(*n_plus_one_grammed_tweets):  # Flattens the nested lists
@@ -105,6 +101,13 @@ class Model:
                 break
 
         return chain
+
+    def _set_seeds(self, tokenized_tweets: Iterable[List[Token]]) -> None:
+        if self._seeds is None:
+            self._seeds = []
+
+        # Get the first ngram from each tweet
+        self._seeds.extend([Model._to_ngrams(tweet, self._n)[0] for tweet in tokenized_tweets if len(tweet) > self._n])
 
     @staticmethod
     def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
