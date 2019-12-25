@@ -38,6 +38,9 @@ class _Weights:
         total_count = sum(self._counts[ngram].values())
         return [_TokenProbability(pair[0], pair[1] / total_count) for pair in self._counts[ngram].items()]
 
+    def clear(self) -> None:
+        self._counts.clear()
+
 
 class Model:
     def __init__(self, tweets: Iterable[Tweet] = None, n: int = 2):
@@ -145,6 +148,8 @@ class LazyFitModel(Model):
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
         last_n_tokens = tokens[-self._n:]
+
+        # TODO check order here
         relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
 
         for tweet in relevant_tweets:
@@ -153,14 +158,20 @@ class LazyFitModel(Model):
                 next_token = n_plus_one_gram[-1]
                 self._weights.add(ngram, next_token)
 
-        return super().predict_next_token(tokens)
+        prediction = super().predict_next_token(tokens)
+        self._weights.clear()
+        return prediction
 
 
-def train_model_from_file(tweets_ndjson_filename: str, n: int = 2) -> Model:
+def train_model_from_file(tweets_ndjson_filename: str, n: int = 2, lazy_fitting: bool = False) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
-    model = LazyFitModel(tweets, n)
+    if lazy_fitting:
+        model = LazyFitModel(tweets, n)
+    else:
+        model = Model(tweets, n)
+
     return model
