@@ -168,7 +168,7 @@ class LazyFitModel(Model):
         return prediction
 
 
-def train_model_from_file(tweets_ndjson_filename: str, min_n: int = 2, max_n: int = 7, lazy_fitting: bool = False) -> Model:
+def train_model_from_file(tweets_ndjson_filename: str, min_n: int = 2, max_n: int = 5, lazy_fitting: bool = False) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
