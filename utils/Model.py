@@ -23,6 +23,7 @@ class _TokenProbability(NamedTuple):
 
 
 class _Weights:
+    # TODO experiment with storing tokens/ngrams as ints to save memory
     def __init__(self, n_plus_one_grams: Iterable[_NGram] = None):
         # Using partial(defaultdict, int) instead of standard defaultdict(lambda: int) bc the latter cannot be pickled
         self._counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
