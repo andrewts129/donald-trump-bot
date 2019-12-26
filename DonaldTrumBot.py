@@ -63,9 +63,10 @@ def test_tweet_command() -> None:
     input_file = 'data/trump_tweets.ndjson'
     num_tweets = 10
     n = 2
+    use_lazy_fit = False
 
     train_time_start = timer()
-    model = train_model_from_file(input_file, n, True)
+    model = train_model_from_file(input_file, n, use_lazy_fit)
     train_time_total = timer() - train_time_start
 
     tweet_time_start = timer()
