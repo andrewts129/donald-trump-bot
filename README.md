@@ -13,6 +13,6 @@ However, there is a small random chance that it will create a tweet using the mo
 configured to post about 2.5 times a day, on average.
 
 TODO:
-* Logging
-* More configuration options (lots of hardcoding right now)
-* Experiment with using a neural network model instead of plain Markov chains
+* Add more logging
+* Experiment with using a neural network model instead of a maximum-likelihood Markov model
+* Find ways to reduce memory usage further so it runs better on cheap cloud hosts
