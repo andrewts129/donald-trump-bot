@@ -152,15 +152,15 @@ class LazyFitModel(Model):
             self._weights = _Weights()
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        # TODO implement dynamic n selection
-        last_n_tokens = tokens[-self._min_n:]
-        relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
+        for n in range(self._min_n, self._max_n + 1):
+            last_n_tokens = tokens[-n:]
+            relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
 
-        for tweet in relevant_tweets:
-            for n_plus_one_gram in Model._to_ngrams(tweet, self._min_n + 1):
-                ngram = n_plus_one_gram[:-1]
-                next_token = n_plus_one_gram[-1]
-                self._weights.add(ngram, next_token)
+            for tweet in relevant_tweets:
+                for n_plus_one_gram in Model._to_ngrams(tweet, n + 1):
+                    ngram = n_plus_one_gram[:-1]
+                    next_token = n_plus_one_gram[-1]
+                    self._weights.add(ngram, next_token)
 
         prediction = super().predict_next_token(tokens)
         self._weights.clear()
