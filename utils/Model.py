@@ -148,8 +148,6 @@ class LazyFitModel(Model):
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
         last_n_tokens = tokens[-self._n:]
-
-        # TODO check order here
         relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
 
         for tweet in relevant_tweets:
