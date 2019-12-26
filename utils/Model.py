@@ -133,11 +133,8 @@ class LazyFitModel(Model):
         super().__init__(tweets, n)
 
     def fit(self, tweets: Iterable[Tweet]) -> None:
-        self._seeds = []
-        self._weights = _Weights()
         self._tokenized_tweets = []
-
-        self.partial_fit(tweets)
+        super().fit(tweets)
 
     def partial_fit(self, tweets: Iterable[Tweet]) -> None:
         self._tokenized_tweets = self._preprocess_tweets(tweets)

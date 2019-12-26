@@ -65,7 +65,7 @@ def test_tweet_command() -> None:
     n = 2
 
     train_time_start = timer()
-    model = train_model_from_file(input_file, n)
+    model = train_model_from_file(input_file, n, True)
     train_time_total = timer() - train_time_start
 
     tweet_time_start = timer()
