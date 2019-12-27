@@ -14,6 +14,5 @@ configured to post about 2.5 times a day, on average.
 
 TODO:
 * Add more logging
-* Add a linter
 * Experiment with using a neural network model instead of a maximum-likelihood Markov model
 * Find ways to reduce memory usage further so it runs better on cheap cloud hosts

@@ -25,23 +25,21 @@ class _TokenProbability(NamedTuple):
 class _Weights:
     def __init__(self, n_plus_one_grams: Iterable[_NGram] = None):
         # Using partial(defaultdict, int) instead of standard defaultdict(lambda: int) bc the latter cannot be pickled
-        self._conditional_counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
+        self._counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
 
         if n_plus_one_grams is not None:
             for n_plus_one_gram in n_plus_one_grams:
                 self.add(n_plus_one_gram[:-1], n_plus_one_gram[-1])
 
     def add(self, ngram: _NGram, next_token: Token) -> None:
-        self._conditional_counts[ngram][next_token] += 1
+        self._counts[ngram][next_token] += 1
 
-    def get_ml_estimates(self, ngram: _NGram) -> List[_TokenProbability]:
-        # Get maximum likelihood estimates for each token that might succeed the given ngram
-        # TODO use MAP instead
-        total_count = sum(self._conditional_counts[ngram].values())
-        return [_TokenProbability(token, count / total_count) for token, count in self._conditional_counts[ngram].items()]
+    def get_successor_probabilities(self, ngram: _NGram) -> List[_TokenProbability]:
+        total_count = sum(self._counts[ngram].values())
+        return [_TokenProbability(pair[0], pair[1] / total_count) for pair in self._counts[ngram].items()]
 
     def clear(self) -> None:
-        self._conditional_counts.clear()
+        self._counts.clear()
 
 
 class Model:
@@ -82,7 +80,7 @@ class Model:
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
         last_ngram = tuple(tokens[-self._n:])
 
-        successors = self._weights.get_ml_estimates(last_ngram)
+        successors = self._weights.get_successor_probabilities(last_ngram)
         successors = list(sorted(successors, key=lambda sp: sp.probability))
 
         if len(successors) > 0:
