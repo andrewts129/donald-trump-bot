@@ -23,6 +23,7 @@ class _TokenProbability(NamedTuple):
 
 
 class _Weights:
+    # TODO experiment with storing tokens/ngrams as ints to save memory
     def __init__(self, n_plus_one_grams: Iterable[_NGram] = None):
         # Using partial(defaultdict, int) instead of standard defaultdict(lambda: int) bc the latter cannot be pickled
         self._counts: Dict[_NGram, Dict[Token, int]] = defaultdict(partial(defaultdict, int))
@@ -34,6 +35,10 @@ class _Weights:
     def add(self, ngram: _NGram, next_token: Token) -> None:
         self._counts[ngram][next_token] += 1
 
+    def enough_data_for_prediction(self, ngram: _NGram) -> bool:
+        total_count = sum(self._counts[ngram].values())
+        return total_count > 10  # TODO less arbitrary number here
+
     def get_successor_probabilities(self, ngram: _NGram) -> List[_TokenProbability]:
         total_count = sum(self._counts[ngram].values())
         return [_TokenProbability(pair[0], pair[1] / total_count) for pair in self._counts[ngram].items()]
@@ -43,8 +48,9 @@ class _Weights:
 
 
 class Model:
-    def __init__(self, tweets: Iterable[Tweet] = None, n: int = 2):
-        self._n = n
+    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
+        self._min_n = min_n
+        self._max_n = max_n
         self._tokenizer = TweetTokenizer()
 
         # Initialized when model is fit
@@ -67,32 +73,35 @@ class Model:
         if self._weights is None:
             self._weights = _Weights()
 
-        n_plus_one_grammed_tweets = (Model._to_ngrams(tweet, self._n + 1) for tweet in tokenized_tweets)
-        for n_plus_one_gram in itertools.chain(*n_plus_one_grammed_tweets):  # Flattens the nested lists
-            ngram = n_plus_one_gram[:-1]
-            next_token = n_plus_one_gram[-1]
-            self._weights.add(ngram, next_token)
+        for n in range(self._min_n, self._max_n + 1):
+            n_plus_one_grammed_tweets = (Model._to_ngrams(tweet, n + 1) for tweet in tokenized_tweets)
+            for n_plus_one_gram in itertools.chain(*n_plus_one_grammed_tweets):  # Flattens the nested lists
+                ngram = n_plus_one_gram[:-1]
+                next_token = n_plus_one_gram[-1]
+                self._weights.add(ngram, next_token)
 
     def get_seed(self) -> List[Token]:
         random_ngram = random.choice(self._seeds)
         return list(random_ngram)
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        last_ngram = tuple(tokens[-self._n:])
+        for n in reversed(range(self._min_n, self._max_n + 1)):
+            last_ngram = tuple(tokens[-n:])
 
-        successors = self._weights.get_successor_probabilities(last_ngram)
-        successors = list(sorted(successors, key=lambda sp: sp.probability))
+            if self._weights.enough_data_for_prediction(last_ngram) or n == self._min_n:
+                successors = self._weights.get_successor_probabilities(last_ngram)
+                successors = list(sorted(successors, key=lambda sp: sp.probability))
 
-        if len(successors) > 0:
-            successor_tokens, probabilities = zip(*successors)
-            cumulative_probabilities = [prob + sum(probabilities[:i]) for i, prob in enumerate(probabilities)]
+                if len(successors) > 0:
+                    successor_tokens, probabilities = zip(*successors)
+                    cumulative_probabilities = [prob + sum(probabilities[:i]) for i, prob in enumerate(probabilities)]
 
-            random_num = beta(3, 1)  # Skews towards higher numbers. Increases bias towards common patterns
-            chosen_index = next(i for i, prob in enumerate(cumulative_probabilities) if random_num <= prob)
+                    random_num = beta(3, 1)  # Skews towards higher numbers. Increases bias towards common patterns
+                    chosen_index = next(i for i, prob in enumerate(cumulative_probabilities) if random_num <= prob)
 
-            return successor_tokens[chosen_index]
-        else:
-            return None
+                    return successor_tokens[chosen_index]
+                else:
+                    return None
 
     def generate_tokens(self, n: int) -> List[Token]:
         chain = self.get_seed()
@@ -110,7 +119,7 @@ class Model:
             self._seeds = []
 
         # Get the first ngram from each tweet
-        self._seeds.extend([Model._to_ngrams(tweet, self._n)[0] for tweet in tokenized_tweets if len(tweet) > self._n])
+        self._seeds.extend([Model._to_ngrams(tweet, self._min_n)[0] for tweet in tokenized_tweets if len(tweet) > self._min_n])
 
     @staticmethod
     def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
@@ -128,9 +137,9 @@ class Model:
 
 
 class LazyFitModel(Model):
-    def __init__(self, tweets: Iterable[Tweet] = None, n: int = 2):
+    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
         self._tokenized_tweets = None
-        super().__init__(tweets, n)
+        super().__init__(tweets, min_n, max_n)
 
     def fit(self, tweets: Iterable[Tweet]) -> None:
         self._tokenized_tweets = []
@@ -144,29 +153,30 @@ class LazyFitModel(Model):
             self._weights = _Weights()
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
-        last_n_tokens = tokens[-self._n:]
-        relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
+        for n in range(self._min_n, self._max_n + 1):
+            last_n_tokens = tokens[-n:]
+            relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
 
-        for tweet in relevant_tweets:
-            for n_plus_one_gram in Model._to_ngrams(tweet, self._n + 1):
-                ngram = n_plus_one_gram[:-1]
-                next_token = n_plus_one_gram[-1]
-                self._weights.add(ngram, next_token)
+            for tweet in relevant_tweets:
+                for n_plus_one_gram in Model._to_ngrams(tweet, n + 1):
+                    ngram = n_plus_one_gram[:-1]
+                    next_token = n_plus_one_gram[-1]
+                    self._weights.add(ngram, next_token)
 
         prediction = super().predict_next_token(tokens)
         self._weights.clear()
         return prediction
 
 
-def train_model_from_file(tweets_ndjson_filename: str, n: int = 2, lazy_fitting: bool = False) -> Model:
+def train_model_from_file(tweets_ndjson_filename: str, min_n: int = 2, max_n: int = 5, lazy_fitting: bool = False) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
     if lazy_fitting:
-        model = LazyFitModel(tweets, n)
+        model = LazyFitModel(tweets, min_n, max_n)
     else:
-        model = Model(tweets, n)
+        model = Model(tweets, min_n, max_n)
 
     return model
