@@ -36,8 +36,8 @@ class _Weights:
         self._counts[ngram][next_token] += 1
 
     def enough_data_for_prediction(self, ngram: _NGram) -> bool:
-        total_count = sum(self._counts[ngram].values())
-        return total_count > 10  # TODO less arbitrary number here
+        num_possible_successors = len(self._counts[ngram].keys())
+        return num_possible_successors > 2
 
     def get_successor_probabilities(self, ngram: _NGram) -> List[_TokenProbability]:
         total_count = sum(self._counts[ngram].values())
