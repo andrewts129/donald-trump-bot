@@ -2,6 +2,7 @@
 import argparse
 import os
 import pickle
+import re
 from timeit import default_timer as timer
 from typing import Dict
 
@@ -11,7 +12,8 @@ from dotenv import load_dotenv
 from utils.Model import train_model_from_file
 from utils.TweetBuilder import create_tweet
 from utils.TweetDownloader import add_new_tweets_to_dump
-from utils.TweetPoster import get_tweet_ids_to_reply_to, post_reply_tweet, should_tweet_now, post_tweet
+from utils.TweetPoster import get_tweet_ids_to_reply_to, post_reply_tweet, should_tweet_now, post_tweet, \
+    get_random_follower
 
 # TODO logging
 load_dotenv()
@@ -33,6 +35,12 @@ def tweet_command(args: Dict) -> None:
 
     if args['force_tweet'] or should_tweet_now(args['min_between_wakeups'], args['target_avg_tweets_per_day']):
         tweet = create_tweet(model, 240)
+
+        # If we're about to randomly @ somebody, swap it out for one of our followers
+        if tweet.startswith('@'):
+            random_follower_name = get_random_follower(api)
+            tweet = re.sub(r'^@\S* ', f'@{random_follower_name} ', tweet)
+
         post_tweet(api, tweet)
 
 
