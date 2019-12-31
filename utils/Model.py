@@ -10,9 +10,9 @@ import nltk
 from nltk.tokenize.casual import TweetTokenizer
 from numpy.random import beta
 
-from utils.TweetValidator import should_use_tweet
 from namedtuples.Token import Token
 from namedtuples.Tweet import Tweet, tweet_json_decode_hook
+from utils.TweetValidator import should_use_tweet
 
 _NGram = Tuple[Token, ...]
 
@@ -121,7 +121,10 @@ class Model:
             self._seeds = []
 
         # Get the first ngram from each tweet
-        self._seeds.extend([Model._to_ngrams(tweet, self._min_n)[0] for tweet in tokenized_tweets if len(tweet) > self._min_n])
+        long_enough_tweets = (tweet for tweet in tokenized_tweets if len(tweet) > self._min_n)
+        first_ngrams = (Model._to_ngrams(tweet, self._min_n)[0] for tweet in long_enough_tweets)
+
+        self._seeds.extend(first_ngrams)
 
     @staticmethod
     def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
@@ -157,7 +160,8 @@ class LazyFitModel(Model):
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
         for n in range(self._min_n, self._max_n + 1):
             last_n_tokens = tokens[-n:]
-            relevant_tweets = (tweet for tweet in self._tokenized_tweets if all((token in tweet) for token in last_n_tokens))
+            relevant_tweets = (tweet for tweet in self._tokenized_tweets if
+                               all((token in tweet) for token in last_n_tokens))
 
             for tweet in relevant_tweets:
                 for n_plus_one_gram in Model._to_ngrams(tweet, n + 1):

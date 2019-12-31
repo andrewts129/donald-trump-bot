@@ -2,8 +2,8 @@ from typing import Iterable
 
 import nltk
 
-from utils.Model import Model
 from namedtuples.Token import Token
+from utils.Model import Model
 
 
 def _fix_quotes(s: str) -> str:

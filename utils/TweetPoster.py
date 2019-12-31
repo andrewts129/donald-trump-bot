@@ -3,15 +3,19 @@ from random import random
 from typing import Set
 
 import tweepy
-from tweepy import API
+from tweepy import API, Status
 
 
 def _get_liked_tweet_ids(api: API) -> Set[int]:
     return set(tweet.id for tweet in tweepy.Cursor(api.favorites).items())
 
 
+def _is_retweet(tweet: Status) -> bool:
+    return hasattr(tweet, 'retweeted_status')
+
+
 def _get_mentions_tweet_ids(api: API) -> Set[int]:
-    mentions = (tweet for tweet in tweepy.Cursor(api.mentions_timeline).items() if not hasattr(tweet, 'retweeted_status'))
+    mentions = (tweet for tweet in tweepy.Cursor(api.mentions_timeline).items() if not _is_retweet(tweet))
 
     one_day_ago = datetime.today() - timedelta(days=1)
     recent_mentions = (tweet for tweet in mentions if tweet.created_at > one_day_ago)
