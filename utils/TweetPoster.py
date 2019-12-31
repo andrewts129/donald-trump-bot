@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from random import random, choice
+from random import random, choices
 from typing import Set
 
 import tweepy
@@ -47,7 +47,12 @@ def get_tweet_ids_to_reply_to(api: API) -> Set[int]:
 
 
 def get_random_follower(api: API) -> str:
+    # Gets a random follower, weighted towards users we also follow
+    following_ids = set(tweepy.Cursor(api.friends_ids).items())
+
     follower_ids = list(tweepy.Cursor(api.followers_ids).items())
-    random_follower_id = choice(follower_ids)
+    weights = [(3 if user_id in following_ids else 1) for user_id in follower_ids]
+
+    random_follower_id = choices(follower_ids, weights=weights, k=1)[0]
     random_follower = api.get_user(user_id=random_follower_id)
     return random_follower.screen_name
