@@ -159,6 +159,7 @@ class LazyFitModel(Model):
 
     def predict_next_token(self, tokens: List[Token]) -> Optional[Token]:
         for n in range(self._min_n, self._max_n + 1):
+            # TODO only train the model on the n needed (aka avoid parsing the n=1 level unless necessary b/c it's big)
             last_n_tokens = tokens[-n:]
             relevant_tweets = (tweet for tweet in self._tokenized_tweets if
                                all((token in tweet) for token in last_n_tokens))
