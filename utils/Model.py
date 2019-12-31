@@ -50,7 +50,7 @@ class _Weights:
 
 
 class Model:
-    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
+    def __init__(self, min_n: int, max_n: int, tweets: Iterable[Tweet] = None):
         self._min_n = min_n
         self._max_n = max_n
         self._tokenizer = TweetTokenizer()
@@ -139,9 +139,9 @@ class Model:
 
 
 class LazyFitModel(Model):
-    def __init__(self, tweets: Iterable[Tweet] = None, min_n: int = 2, max_n: int = 7):
+    def __init__(self, min_n: int, max_n: int, tweets: Iterable[Tweet] = None):
         self._tokenized_tweets = None
-        super().__init__(tweets, min_n, max_n)
+        super().__init__(min_n, max_n, tweets)
 
     def fit(self, tweets: Iterable[Tweet]) -> None:
         self._tokenized_tweets = []
@@ -170,15 +170,15 @@ class LazyFitModel(Model):
         return prediction
 
 
-def train_model_from_file(tweets_ndjson_filename: str, min_n: int = 2, max_n: int = 5, lazy_fitting: bool = False) -> Model:
+def train_model_from_file(tweets_ndjson_filename: str, min_n: int, max_n: int, lazy_fitting: bool) -> Model:
     with open(tweets_ndjson_filename, 'r') as fp:
         tweets = ndjson.load(fp, object_hook=tweet_json_decode_hook)
 
     tweets = (tweet for tweet in tweets if should_use_tweet(tweet))
 
     if lazy_fitting:
-        model = LazyFitModel(tweets, min_n, max_n)
+        model = LazyFitModel(min_n, max_n, tweets)
     else:
-        model = Model(tweets, min_n, max_n)
+        model = Model(min_n, max_n, tweets)
 
     return model
