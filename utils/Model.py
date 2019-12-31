@@ -36,8 +36,10 @@ class _Weights:
         self._counts[ngram][next_token] += 1
 
     def enough_data_for_prediction(self, ngram: _NGram) -> bool:
+        # Returns True if we can predict without just copying a single existing tweet
         num_possible_successors = len(self._counts[ngram].keys())
-        return num_possible_successors > 2
+        total_occurences = sum(self._counts[ngram].values())
+        return num_possible_successors > 1 or total_occurences > 2
 
     def get_successor_probabilities(self, ngram: _NGram) -> List[_TokenProbability]:
         total_count = sum(self._counts[ngram].values())
