@@ -40,15 +40,16 @@ def _fix_parenthesis(s: str) -> str:
 
 
 def _join_tokens(tokens: Iterable[Token]) -> str:
+    # This function has just been hacked together through trial and error. Language is hard and weird
     output = ' '.join(token.word for token in tokens)
 
-    # TODO regex replacement for two-letter acronyms
     replacements = [
         (' ,', ','), (' .', '.'), (' ?', '?'), (' !', '!'), (' :', ':'), (' ;', ';'), ('... ', '...'), (' …', '…'),
-        ('. @', '.@'), ('- -', '--'), ('U. S.', 'U.S.'), ('A. G.', 'A.G.'), ('D. C.', 'D.C.'), ('T. V.', 'T.V.'),
-        ('P. M.', 'P.M.'), ('A. M.', 'A.M.'), ('0, 0', '0,0'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
-        ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('’', "'"), ("n ' t", "n't"),
-        (" ' s", "'s"), (" ' v", "'v"), (" ' m", "'m"), (" ' re", "'re"), ("' 0", "'0"), (" ' ", ' " ')
+        ('. @', '.@'), ('@ ', '@'), ('- -', '--'), ('$ ', '$'), (' %', '%'), ('MS - 13', 'MS-13'),
+        ('# ', '#'), ('w /', 'w/'), (' / ', '/'), ('“', '"'), ('”', '"'), ('``', '"'), ("''", '"'), ('‘', "'"),
+        ('’', "'"), (" n't", "n't"), (" 't", "'t"), (" ' t", "'t"), (" 's", "'s"), (" ' s", "'s"), (" 'v", "'v"),
+        (" ' v", "'v"), (" 'm", "'m"), (" 're", "'re"), (" ' re", "'re"), (" 'll", "'ll"), ("' 0", "'0"),
+        ('https: //', 'https://'), ('http: //', 'http://'), ('& amp;', '&'), (" ' ", ' " '),
     ]
     for replacement_pair in replacements:  # Order does matter
         output = output.replace(*replacement_pair)

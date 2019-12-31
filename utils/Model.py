@@ -7,7 +7,7 @@ from typing import List, NamedTuple, Iterable, Dict, Optional, Tuple
 
 import ndjson
 import nltk
-from nltk.tokenize.casual import TweetTokenizer
+from nltk.tokenize import word_tokenize
 from numpy.random import beta
 
 from namedtuples.Token import Token
@@ -53,7 +53,6 @@ class Model:
     def __init__(self, min_n: int, max_n: int, tweets: Iterable[Tweet] = None):
         self._min_n = min_n
         self._max_n = max_n
-        self._tokenizer = TweetTokenizer()
 
         # Initialized when model is fit
         self._seeds: Optional[List[_NGram]] = None
@@ -130,11 +129,12 @@ class Model:
     def _to_ngrams(tokens: Iterable[Token], n: int) -> List[_NGram]:
         return list(nltk.ngrams(tokens, n))
 
-    def _preprocess_tweets(self, tweets: Iterable[Tweet]) -> List[List[Token]]:
+    @staticmethod
+    def _preprocess_tweets(tweets: Iterable[Tweet]) -> List[List[Token]]:
         tweet_texts = (tweet.text for tweet in tweets)
 
         with mp.Pool() as pool:
-            tokenized_tweets = pool.map(self._tokenizer.tokenize, tweet_texts)
+            tokenized_tweets = pool.map(word_tokenize, tweet_texts)
             pos_tagged_tokenized_tweets = pool.map(nltk.pos_tag, tokenized_tweets)
 
         # Converts the word-pos tuples returned by nltk.pos_tag() to Token objects
