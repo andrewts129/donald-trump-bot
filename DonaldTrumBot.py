@@ -77,7 +77,7 @@ def main():
     parser.add_argument('--min_between_wakeups', type=float, default=10)
     parser.add_argument('--target_avg_tweets_per_day', type=float, default=2.5)
     parser.add_argument('--force-tweet', action='store_true')
-    parser.add_argument('--min-ngram-length', type=int, default=1)
+    parser.add_argument('--min-ngram-length', type=int, default=2)
     parser.add_argument('--max-ngram-length', type=int, default=10)
     parser.add_argument('--tweets_to_build', type=int, default=10)
     parser.add_argument('--lazy-fit', action='store_true')
