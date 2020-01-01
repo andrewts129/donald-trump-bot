@@ -1,6 +1,6 @@
 # @DonaldTrumBot
 
-[![Build Status](https://travis-ci.org/andrewts129/donald-trump-bot.svg?branch=master)](https://travis-ci.org/andrewts129/donald-trump-bot)  
+[![](https://github.com/andrewts129/donald-trump-bot/workflows/Build%20%26%20Deploy/badge.svg)](https://github.com/andrewts129/donald-trump-bot/actions?query=workflow%3A%22Build+%26+Deploy%22)
 
 Twitter bot that uses President Trump's Twitter account to create Markov chains that imitate him. Account can be found
 running live [here](https://twitter.com/DonaldTrumBot).
