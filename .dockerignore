@@ -4,3 +4,4 @@ data/
 *.pkl
 README.md
 .gitignore
+.github/
