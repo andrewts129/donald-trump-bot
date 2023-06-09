@@ -11,7 +11,7 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@master
       - name: Build Image & Push to DockerHub
-        uses: elgohr/Publish-Docker-Github-Action@master
+        uses: elgohr/Publish-Docker-Github-Action@v5
         with:
           name: andrewts129/donaldtrumbot
           username: ${{ secrets.DOCKER_USERNAME }}
